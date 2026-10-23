@@ -1,0 +1,10 @@
+# Prenesene HTML strani (lahko se kadarkoli prenesejo znova)
+html_strani/
+
+# Začasne datoteke Pythona in Jupytra
+__pycache__/
+.ipynb_checkpoints/
+
+# Virtualno okolje in nastavitve urejevalnika
+.venv/
+.vscode/
