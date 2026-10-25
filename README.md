@@ -69,7 +69,10 @@ Potrebuješ Python 3 in knjižnice iz `requirements.txt`:
 py -m pip install -r requirements.txt
 ```
 
-Shranjevanje strani:
+Postopek ima dva koraka. Najprej ročno shraniš strani (to je treba narediti
+le enkrat), nato pa vse ostalo naredi en ukaz.
+
+**1. Shranjevanje strani:**
 
 ```
 py prenos_strani.py          # odpira strani eno za drugo (68 strani)
@@ -80,13 +83,21 @@ Ko se stran odpre v brskalniku, jo shrani s **Ctrl+S** kot
 »Spletna stran, samo HTML« v mapo Prenosi in v terminalu pritisni Enter.
 Če vpišeš `k`, se delo prekine in se ob naslednjem zagonu nadaljuje.
 
-Izluščanje podatkov iz shranjenih strani:
+**2. Priprava podatkov z enim ukazom:**
+
+```
+py main.py
+```
+
+`main.py` preveri, ali so shranjene vse strani (če katera manjka, to izpiše in
+se ustavi, ne da bi spremenil obstoječe CSV), nato izlušči podatke in zapiše
+`podatki/lestvice.csv` ter `podatki/tekme.csv`.
+
+Posamezne korake lahko zaženeš tudi ločeno:
 
 ```
 py izlusci_podatke.py        # izpiše povzetek lestvic in tekem po sezonah
 ```
-
-Zapis podatkov v CSV:
 
 ```
 py shrani_podatke.py         # ustvari podatki/lestvice.csv in podatki/tekme.csv
@@ -102,6 +113,7 @@ projekt-uvp/
 ├── prenos_strani.py     # pomoč pri shranjevanju HTML strani
 ├── izlusci_podatke.py   # izluščanje podatkov iz strani z BeautifulSoup
 ├── shrani_podatke.py    # čiščenje podatkov in zapis v CSV
+├── main.py              # preveri strani, izlušči podatke in zapiše CSV
 ├── podatki/
 │   ├── lestvice.csv     # končne lestvice vseh sezon
 │   └── tekme.csv        # vse tekme vseh sezon
