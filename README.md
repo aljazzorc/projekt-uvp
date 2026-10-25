@@ -24,7 +24,9 @@ Podatki se zajamejo s spletnim strgalnikom (brez API-ja) v dveh ločenih korakih
    FBref je zaščiten pred roboti (Cloudflare) in programom vrača napako 403,
    zato program vsako stran odpre v brskalniku, uporabnik jo shrani s
    Ctrl+S, program pa shranjeno datoteko poišče v mapi Prenosi, preveri, da
-   vsebuje tabele, in jo premakne v mapo `html_strani/` (ta ni na GitHubu).
+   vsebuje pravo tabelo (lestvico ali tekme prave sezone, po atributu `id`),
+   in jo premakne v mapo `html_strani/` (ta ni na GitHubu). Napačno shranjena
+   stran (npr. druga sezona) se zavrne.
    Že shranjene strani se ob ponovnem zagonu preskočijo, zato lahko delo
    kadarkoli prekineš.
 2. **Izluščanje podatkov** (`izlusci_podatke.py`): iz shranjenih strani se z

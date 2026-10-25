@@ -32,8 +32,12 @@ import webbrowser
 # NASTAVITVE
 # ============================================================================
 
-# Osnovni naslov za Premier League na FBrefu (oznaka tekmovanja je 9).
-OSNOVNI_URL = "https://fbref.com/en/comps/9"
+# Oznaka tekmovanja Premier League na FBrefu; je del naslovov strani
+# in imen tabel (id).
+OZNAKA_LIGE = "9"
+
+# Osnovni naslov za Premier League na FBrefu.
+OSNOVNI_URL = f"https://fbref.com/en/comps/{OZNAKA_LIGE}"
 IME_LIGE = "Premier-League"
 
 # Prva in zadnja sezona: leto označuje začetek sezone (1992 → 1992-1993).
@@ -126,21 +130,48 @@ def pot_tekem(sezona):
     return os.path.join(MAPA_TEKME, f"tekme_{sezona}.html")
 
 
+def id_tabele_lestvice(sezona):
+    """
+    Vrne id tabele s končno lestvico sezone (po njem stran tudi preverimo).
+
+    Sprejme: oznako sezone (npr. "2023-2024").
+    Vrne: niz z id-jem tabele.
+    Primer: id_tabele_lestvice("2023-2024") → "results2023-202491_overall"
+    """
+    return f"results{sezona}{OZNAKA_LIGE}1_overall"
+
+
+def id_tabele_tekem(sezona):
+    """
+    Vrne id tabele z vsemi tekmami sezone (po njem stran tudi preverimo).
+
+    Sprejme: oznako sezone (npr. "2023-2024").
+    Vrne: niz z id-jem tabele.
+    Primer: id_tabele_tekem("2023-2024") → "sched_2023-2024_9_1"
+    """
+    return f"sched_{sezona}_{OZNAKA_LIGE}_1"
+
+
 def seznam_strani(od_leta, do_leta):
     """
     Sestavi seznam vseh strani, ki jih potrebujemo za izbrane sezone.
 
     Sprejme: začetno in končno leto (int).
-    Vrne: seznam trojic (opis, url, pot).
+    Vrne: seznam četveric (opis, url, pot, id_tabele), kjer je id_tabele
+          id tabele, ki mora biti na pravilno shranjeni strani.
     Primer: seznam_strani(2023, 2023)
-        → [("2023-2024 lestvica", "https://...", "html_strani/lestvice/..."),
-           ("2023-2024 tekme", "https://...", "html_strani/tekme/...")]
+        → [("2023-2024 lestvica", "https://...", "html_strani/lestvice/...",
+            "results2023-202491_overall"),
+           ("2023-2024 tekme", "https://...", "html_strani/tekme/...",
+            "sched_2023-2024_9_1")]
     """
     strani = []
     for leto in range(od_leta, do_leta + 1):
         sezona = oznaka_sezone(leto)
-        strani.append((f"{sezona} lestvica", url_lestvice(sezona), pot_lestvice(sezona)))
-        strani.append((f"{sezona} tekme", url_tekem(sezona), pot_tekem(sezona)))
+        strani.append((f"{sezona} lestvica", url_lestvice(sezona),
+                       pot_lestvice(sezona), id_tabele_lestvice(sezona)))
+        strani.append((f"{sezona} tekme", url_tekem(sezona),
+                       pot_tekem(sezona), id_tabele_tekem(sezona)))
     return strani
 
 
@@ -194,13 +225,16 @@ def je_zascita_pred_roboti(besedilo):
     return any(znak in besedilo for znak in ZNAKI_ZASCITE)
 
 
-def razlog_neveljavnosti(pot):
+def razlog_neveljavnosti(pot, id_tabele):
     """
-    Preveri, ali je datoteka prava stran FBrefa s tabelami.
+    Preveri, ali je datoteka prava stran FBrefa, torej ali vsebuje tabelo
+    z danim id-jem. Tako zavrnemo tudi stran napačne sezone ali napačno
+    vrsto strani (npr. lestvico namesto tekem).
 
-    Sprejme: pot do datoteke.
+    Sprejme: pot do datoteke in id tabele, ki mora biti na strani.
     Vrne: None, če je datoteka v redu, sicer niz z razlogom, zakaj ni.
-    Primer: razlog_neveljavnosti("html_strani/tekme/tekme_2023-2024.html") → None
+    Primer: razlog_neveljavnosti("html_strani/tekme/tekme_2023-2024.html",
+                                 "sched_2023-2024_9_1") → None
     """
     if not os.path.exists(pot):
         return "datoteka ne obstaja"
@@ -213,11 +247,14 @@ def razlog_neveljavnosti(pot):
     with open(pot, encoding="utf-8", errors="replace") as datoteka:
         besedilo = datoteka.read()
 
-    # Najprej preverimo tabele: prava stran FBrefa jih ima veliko.
-    if "<table" in besedilo:
+    # Najprej iščemo pravo tabelo. Iščemo celoten zapis id="...", da se
+    # id ene sezone ne ujame kot del daljšega id-ja.
+    if f'id="{id_tabele}"' in besedilo:
         return None
     if je_zascita_pred_roboti(besedilo):
         return "shranjena je stran preverjanja (Cloudflare), ne stran FBrefa"
+    if "<table" in besedilo:
+        return f"to je napačna stran (ni tabele {id_tabele})"
     return "v datoteki ni nobene tabele"
 
 
@@ -283,7 +320,7 @@ def pocakaj_na_datoteko(mapa, od_casa):
     return None
 
 
-def shrani_stran(opis, url, pot, mapa):
+def shrani_stran(opis, url, pot, id_tabele, mapa):
     """
     Odpre stran v brskalniku, počaka, da jo uporabnik shrani, nato datoteko
     poišče v mapi Prenosi, jo premakne na pravo mesto in preveri.
@@ -292,6 +329,7 @@ def shrani_stran(opis, url, pot, mapa):
         opis – opis strani za izpis (npr. "2023-2024 tekme"),
         url  – naslov strani,
         pot  – kam naj se datoteka shrani v projektu,
+        id_tabele – id tabele, ki mora biti na pravilno shranjeni strani,
         mapa – mapa, kamor brskalnik shranjuje prenose.
     Vrne enega od nizov:
         PRESKOCENO – veljavna datoteka že obstaja,
@@ -300,7 +338,7 @@ def shrani_stran(opis, url, pot, mapa):
         None       – uporabnik je prekinil delo (vpisal "k").
     """
     # Že shranjene in veljavne strani preskočimo.
-    if razlog_neveljavnosti(pot) is None:
+    if razlog_neveljavnosti(pot, id_tabele) is None:
         return PRESKOCENO
 
     # Čas zapomnimo, da v mapi Prenosi najdemo le na novo shranjene datoteke.
@@ -322,7 +360,7 @@ def shrani_stran(opis, url, pot, mapa):
 
     # Datoteko preverimo, preden jo premaknemo; neveljavno pustimo, kjer je,
     # da jo lahko pogledaš.
-    razlog = razlog_neveljavnosti(shranjena)
+    razlog = razlog_neveljavnosti(shranjena, id_tabele)
     if razlog is not None:
         print(f"  Datoteka ni v redu: {razlog}.")
         return NAPAKA
@@ -351,8 +389,8 @@ def shrani_sezone(od_leta, do_leta):
     mapa = mapa_prenosov()
     print(f"Strani shranjuj v mapo: {mapa}")
 
-    for opis, url, pot in seznam_strani(od_leta, do_leta):
-        izid = shrani_stran(opis, url, pot, mapa)
+    for opis, url, pot, id_tabele in seznam_strani(od_leta, do_leta):
+        izid = shrani_stran(opis, url, pot, id_tabele, mapa)
         if izid is None:
             print("\nDelo je prekinjeno. Ob ponovnem zagonu se nadaljuje, kjer si ostal.")
             break
@@ -372,8 +410,8 @@ def preveri_sezone(od_leta, do_leta):
     Primer: preveri_sezone(1992, 2025) → {"PRESKOCENO": 68, "MANJKA": 0}
     """
     stevec = {PRESKOCENO: 0, MANJKA: 0}
-    for opis, _, pot in seznam_strani(od_leta, do_leta):
-        razlog = razlog_neveljavnosti(pot)
+    for opis, _, pot, id_tabele in seznam_strani(od_leta, do_leta):
+        razlog = razlog_neveljavnosti(pot, id_tabele)
         if razlog is None:
             stevec[PRESKOCENO] += 1
         else:

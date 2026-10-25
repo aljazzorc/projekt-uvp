@@ -18,16 +18,14 @@ import os
 from bs4 import BeautifulSoup
 
 from prenos_strani import (
-    KONCNO_LETO, ZACETNO_LETO, oznaka_sezone, pot_lestvice, pot_tekem,
+    KONCNO_LETO, ZACETNO_LETO, id_tabele_lestvice, id_tabele_tekem,
+    oznaka_sezone, pot_lestvice, pot_tekem,
 )
 
 
 # ============================================================================
 # NASTAVITVE
 # ============================================================================
-
-# Oznaka tekmovanja Premier League na FBrefu; je del imena tabel.
-OZNAKA_LIGE = "9"
 
 # Kateri data-stat na FBrefu ustreza kateremu stolpcu v naših podatkih.
 # Imena data-stat so prebrana iz shranjenih strani (sezoni 1992-1993 in 2023-2024).
@@ -187,18 +185,9 @@ def razbij_strelca(besedilo):
 
 # ============================================================================
 # IZLUŠČANJE LESTVICE
+# (id tabel določata funkciji id_tabele_lestvice in id_tabele_tekem
+#  v prenos_strani.py, da obe datoteki uporabljata ista imena)
 # ============================================================================
-
-def id_tabele_lestvice(sezona):
-    """
-    Vrne id tabele s končno lestvico sezone.
-
-    Sprejme: oznako sezone (npr. "2023-2024").
-    Vrne: niz z id-jem tabele.
-    Primer: id_tabele_lestvice("2023-2024") → "results2023-202491_overall"
-    """
-    return f"results{sezona}{OZNAKA_LIGE}1_overall"
-
 
 def pretvori_vrstico_lestvice(vrstica, sezona):
     """
@@ -348,17 +337,6 @@ def je_vmesna_vrstica(vrstica):
 # ============================================================================
 # IZLUŠČANJE TEKEM
 # ============================================================================
-
-def id_tabele_tekem(sezona):
-    """
-    Vrne id tabele z vsemi tekmami sezone.
-
-    Sprejme: oznako sezone (npr. "2023-2024").
-    Vrne: niz z id-jem tabele.
-    Primer: id_tabele_tekem("2023-2024") → "sched_2023-2024_9_1"
-    """
-    return f"sched_{sezona}_{OZNAKA_LIGE}_1"
-
 
 def pretvori_vrstico_tekme(vrstica, sezona):
     """
