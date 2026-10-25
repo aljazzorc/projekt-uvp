@@ -143,6 +143,47 @@ def manjkajoce_vrednosti(tabela):
     return manjka[manjka > 0]
 
 
+def preveri_skladnost(tekme, lestvice):
+    """
+    Preveri, ali se podatki iz posameznih tekem ujemajo s končnimi lestvicami.
+
+    Za vsak klub v vsaki sezoni iz tekem izračuna število tekem, točke
+    (zmaga 3, remi 1), dane in prejete gole ter jih primerja z lestvico.
+    Ker sta tabeli zajeti z različnih strani FBrefa, ujemanje potrjuje,
+    da je zajem pravilen.
+
+    Sprejme: DataFrame s tekmami in DataFrame z lestvicami.
+    Vrne: DataFrame s klubi, pri katerih se kaj ne ujema (prazen, če se
+          vse ujema), s stolpci iz lestvice, iz tekem in opombo.
+    Primer: preveri_skladnost(tekme, lestvice) → 6 vrstic (4 odbitki točk,
+            2 napaki v lestvici FBrefa)
+    """
+    # Vsako tekmo zapišemo dvakrat: enkrat z vidika domačih, enkrat gostov.
+    doma = pd.DataFrame({
+        "sezona": tekme["sezona"], "klub": tekme["domaci"],
+        "dani": tekme["goli_domaci"], "prejeti": tekme["goli_gostje"],
+        "tocke": tekme["izid"].map({"D": 3, "X": 1, "G": 0}),
+    })
+    v_gosteh = pd.DataFrame({
+        "sezona": tekme["sezona"], "klub": tekme["gostje"],
+        "dani": tekme["goli_gostje"], "prejeti": tekme["goli_domaci"],
+        "tocke": tekme["izid"].map({"D": 0, "X": 1, "G": 3}),
+    })
+    iz_tekem = pd.concat([doma, v_gosteh]).groupby(["sezona", "klub"]).agg(
+        tekme_iz_tekem=("tocke", "size"), tocke_iz_tekem=("tocke", "sum"),
+        dani_iz_tekem=("dani", "sum"), prejeti_iz_tekem=("prejeti", "sum"),
+    ).reset_index()
+
+    skupaj = lestvice.merge(iz_tekem, on=["sezona", "klub"], how="outer")
+    razlike = ((skupaj["tekme"] != skupaj["tekme_iz_tekem"])
+               | (skupaj["tocke"] != skupaj["tocke_iz_tekem"])
+               | (skupaj["dani_goli"] != skupaj["dani_iz_tekem"])
+               | (skupaj["prejeti_goli"] != skupaj["prejeti_iz_tekem"]))
+    stolpci = ["sezona", "klub", "tocke", "tocke_iz_tekem", "dani_goli", "dani_iz_tekem",
+               "prejeti_goli", "prejeti_iz_tekem", "opomba"]
+    return skupaj.loc[razlike, stolpci].reset_index(drop=True)
+
+
 # ============================================================================
 # SLOG GRAFOV
 # ============================================================================
