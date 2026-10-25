@@ -27,8 +27,14 @@ Podatki se zajamejo s spletnim strgalnikom (brez API-ja) v dveh ločenih korakih
    vsebuje tabele, in jo premakne v mapo `html_strani/` (ta ni na GitHubu).
    Že shranjene strani se ob ponovnem zagonu preskočijo, zato lahko delo
    kadarkoli prekineš.
-2. **Izluščanje podatkov** *(v pripravi)*: iz shranjenih strani se z
-   BeautifulSoup izluščijo podatki in zapišejo v CSV datoteke v mapi `podatki/`.
+2. **Izluščanje podatkov** (`izlusci_podatke.py`): iz shranjenih strani se z
+   BeautifulSoup izluščijo podatki. Tabele program poišče po atributu `id`,
+   posamezne podatke v vrsticah pa po atributu `data-stat`. Ker FBref nekatere
+   tabele skrije v HTML komentarje, se oznake komentarjev pred branjem odstranijo.
+   Zaenkrat se izluščijo končne lestvice vseh sezon (mesto, klub, zmage, remiji,
+   porazi, goli, točke, povprečje gledalcev, najboljši strelec in opomba, npr.
+   izpad ali odbitek točk); podatki o posameznih tekmah so v pripravi.
+3. **Zapis v CSV** *(v pripravi)*: podatki se zapišejo v mapo `podatki/`.
 
 ## Analiza
 
@@ -57,6 +63,12 @@ Ko se stran odpre v brskalniku, jo shrani s **Ctrl+S** kot
 »Spletna stran, samo HTML« v mapo Prenosi in v terminalu pritisni Enter.
 Če vpišeš `k`, se delo prekine in se ob naslednjem zagonu nadaljuje.
 
+Izluščanje podatkov iz shranjenih strani:
+
+```
+py izlusci_podatke.py        # izpiše število klubov po sezonah in zadnjo lestvico
+```
+
 ## Struktura projekta
 
 ```
@@ -65,6 +77,7 @@ projekt-uvp/
 ├── requirements.txt
 ├── .gitignore
 ├── prenos_strani.py     # pomoč pri shranjevanju HTML strani
+├── izlusci_podatke.py   # izluščanje podatkov iz strani z BeautifulSoup
 └── html_strani/         # prenesene strani (ni na GitHubu)
     ├── lestvice/
     └── tekme/
