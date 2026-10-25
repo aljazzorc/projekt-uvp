@@ -46,23 +46,88 @@ Podatki se zajamejo s spletnim strgalnikom (brez API-ja) v dveh ločenih korakih
 3. **Čiščenje in zapis v CSV** (`shrani_podatke.py`): izluščeni podatki se
    s knjižnico pandas pretvorijo v tabeli, uredijo (vrstni red in tipi
    stolpcev, datumi, urejanje po sezoni oziroma datumu), odstranijo se
-   morebitne podvojene vrstice, nato se tabeli zapišeta v mapo `podatki/`:
+   morebitne podvojene vrstice in napačna povprečja gledalcev z lestvic
+   (glej [opombo](#opomba-odstranjena-povprečja-gledalcev)), nato se tabeli
+   zapišeta v mapo `podatki/`:
    - `podatki/lestvice.csv` – ena vrstica za vsak klub v vsaki sezoni (686 vrstic),
    - `podatki/tekme.csv` – ena vrstica za vsako tekmo (13.166 vrstic).
 
    Manjkajoči podatki (npr. ura pri starih tekmah ali gledalci, ki jih FBref
    za nekatere tekme nima) ostanejo v CSV prazni.
 
+## Podatki
+
+Podatki so v mapi `podatki/` (na GitHubu, da analiza deluje tudi brez
+ponovnega zajema).
+
+**`tekme.csv`** – 13.166 vrstic, ena za vsako tekmo:
+
+| stolpec | pomen |
+|---|---|
+| `sezona` | sezona, npr. `2023-2024` |
+| `krog`, `dan`, `datum`, `ura` | krog, dan v tednu, datum in ura začetka (angleški čas) |
+| `domaci`, `gostje` | domača in gostujoča ekipa |
+| `goli_domaci`, `goli_gostje` | doseženi goli |
+| `izid` | `D` zmaga domačih, `X` remi, `G` zmaga gostov |
+| `gledalci` | število gledalcev (prazno, če podatka ni ali je bila tekma brez gledalcev) |
+| `stadion`, `sodnik` | stadion in glavni sodnik |
+| `opomba` | opomba FBrefa k tekmi (pri vseh tekmah prazna) |
+
+**`lestvice.csv`** – 686 vrstic, ena za vsak klub na končni lestvici vsake sezone:
+
+| stolpec | pomen |
+|---|---|
+| `sezona`, `mesto`, `klub` | sezona, končno mesto in klub |
+| `tekme`, `zmage`, `remiji`, `porazi` | odigrane tekme in njihovi izidi |
+| `dani_goli`, `prejeti_goli`, `gol_razlika` | goli |
+| `tocke`, `tocke_na_tekmo` | točke na končni lestvici (že z morebitnimi odbitki) |
+| `povprecje_gledalcev` | povprečni obisk na domačih tekmah po FBrefu (prazno, kjer ga FBref nima ali je bil napačen – glej opombo) |
+| `najboljsi_strelec`, `goli_strelca` | najboljši strelec kluba in njegovi goli |
+| `opomba` | npr. uvrstitev v evropska tekmovanja, izpad ali odbitek točk |
+
+**Pravilnost podatkov.** Tekme in lestvice so zajete z dveh različnih strani
+FBrefa, zato jih zvezek primerja: za vsak klub v vsaki sezoni iz tekem izračuna
+točke ter dane in prejete gole. Od 686 uvrstitev se jih 680 popolnoma ujema,
+šest razlik pa je pojasnjenih (štirje odbitki točk in en gol napake na lestvici
+FBrefa v sezoni 1994/95).
+
+**Znane pomanjkljivosti vira:**
+
+- ura začetka je znana le od sezone 2014/15,
+- podatki o gledalcih manjkajo za večino tekem sezone 2007/08, za 141 tekem
+  sezone 2008/09 in za nekaj posameznih tekem; v sezonah 2019/20 (od 17. 6. 2020)
+  in 2020/21 pa so tekme igrali brez gledalcev,
+- povprečje gledalcev na lestvicah je bilo za 32 klubov napačno (glej opombo spodaj).
+
+### Opomba: odstranjena povprečja gledalcev
+
+Pri klubih, ki jim na FBrefu manjka podatek o gledalcih za nekaj domačih tekem,
+je povprečje gledalcev na končni lestvici FBrefa napačno in pogosto večje od
+kapacitete stadiona (npr. Chelsea 2007/08: 786.543 gledalcev, Manchester United
+2008/09: 95.385, stadion pa sprejme okoli 76.000 gledalcev). Pri vseh ostalih
+klubih se povprečje z lestvice ujema s povprečjem, izračunanim iz posameznih
+tekem, na tisočinko odstotka natančno.
+
+Zato `shrani_podatke.py` pri čiščenju za vsak klub povprečje z lestvice primerja
+s povprečjem tekem z znanim obiskom. Če se razlikujeta za več kot 1 %, povprečje
+odstrani (polje ostane prazno). Tako je odstranjenih **32 povprečij** (sezone
+2007/08: 6, 2008/09: 20, 2009/10: 5, 2010/11: 1). Skupaj s 14 povprečji, ki jih
+FBref za sezono 2007/08 sploh nima, je polje prazno pri 46 od 686 klubov.
+
+Covidni sezoni 2019/20 in 2020/21 sta izjema: FBref tekme brez gledalcev šteje
+kot 0 gledalcev, zato je povprečje nižje od povprečja tekem z gledalci, a je
+pravilno in ostane v podatkih. Analiza obiska v zvezku povprečje računa iz
+posameznih tekem in upošteva le klube z znanim obiskom vseh domačih tekem.
+
 ## Analiza
 
 Analiza je v Jupyter zvezku `analiza.ipynb`, pomožne funkcije zanj
 (nalaganje podatkov, izračuni, grafi) pa v `analiza_funkcije.py`.
 
-Zvezek se začne s pregledom podatkov: opis stolpcev, število klubov, tekem in
-golov po sezonah ter manjkajoči podatki. Ura začetka je znana le od sezone
-2014/15, podatki o gledalcih pa manjkajo zaradi covida-19 (tekme brez
-gledalcev v sezonah 2019/20 in 2020/21) in ker jih FBref za nekatere
-sezone nima (predvsem 2007/08 in 2008/09). Analiza to upošteva.
+Zvezek se začne s pregledom podatkov (opis stolpcev, število klubov, tekem in
+golov po sezonah), preverjanjem pravilnosti podatkov in pregledom manjkajočih
+vrednosti. Sledita dva sklopa analize, vsak razdelek pa ima vprašanje, kodo,
+graf in razlago. Na koncu so sklepne ugotovitve in omejitve analize.
 
 Sklop 1 (prednost domačega terena):
 
@@ -95,7 +160,33 @@ da so primerljive z ostalimi sezonami.
 
 ## Ugotovitve
 
-*V pripravi.*
+**Ali domači teren vpliva na uspeh? Da, predvsem zaradi gledalcev.**
+
+- Domači so zmagali na **45,7 %** tekem, gostje na **28,7 %** (25,6 % remijev).
+  Ekipa doma osvoji povprečno 1,63 točke na tekmo, v gosteh 1,12, in da okoli
+  32 % več golov.
+- Prednost se počasi manjša: remijev je manj (27,8 % → 23,2 %), zmag gostov več
+  (26,5 % → 32,1 %, prvih proti zadnjim desetim sezonam), razlika v golih med
+  domačimi in gosti pa je padla z 0,42 na 0,28 gola na tekmo.
+- Na **440 tekmah brez gledalcev** med covidom so domači zmagali le na 38,6 %
+  tekem, gostje pa na 38,9 %: prednost domačega terena je praktično izginila.
+- Število gledalcev samo po sebi ni odločilno. Na tekmah z več kot 50.000 gledalci
+  domači zmagajo na več kot 60 % tekem, vendar zato, ker imajo velike stadione
+  močni klubi; ko klub primerjamo samega s seboj, povezave med obiskom in zmagami
+  skoraj ni (korelacija 0,09).
+
+**Kdo osvaja ligo in koliko točk je za to potrebnih?**
+
+- Vrh je zaprt: v 34 sezonah je bilo le **sedem prvakov** (Manchester United 13,
+  Manchester City 8, Chelsea 5, Arsenal 4, Liverpool 2, Blackburn in Leicester City
+  po 1), pet klubov pa je osvojilo 86 % mest med prvimi tremi.
+- Dno je odprto: na zadnjih treh mestih je končalo 43 različnih klubov.
+- Prvak potrebuje vse več točk: povprečno 81 v prvih in 92 v zadnjih desetih
+  sezonah (rekord 100, Manchester City 2017/18).
+- Za obstanek je bilo povprečno dovolj 38 točk; »40 točk« je bilo potrebnih le v
+  11 od 34 sezon, trije klubi pa so izpadli celo s 40 ali več točkami.
+- Liga je vse bolj neenakomerna: razlika med prvimi tremi in zadnjimi tremi klubi
+  je zrasla z 1,09 na 1,48 točke na tekmo.
 
 ## Navodila za uporabo
 
@@ -105,8 +196,9 @@ Potrebuješ Python 3 in knjižnice iz `requirements.txt`:
 py -m pip install -r requirements.txt
 ```
 
-Postopek ima dva koraka. Najprej ročno shraniš strani (to je treba narediti
-le enkrat), nato pa vse ostalo naredi en ukaz.
+CSV datoteke so že v repozitoriju, zato lahko analizo odpreš takoj
+(korak 3). Za ponovni zajem podatkov najprej ročno shraniš strani (to je
+treba narediti le enkrat), nato pa vse ostalo naredi en ukaz.
 
 **1. Shranjevanje strani:**
 
@@ -140,7 +232,8 @@ py shrani_podatke.py         # ustvari podatki/lestvice.csv in podatki/tekme.csv
 ```
 
 **3. Analiza:** odpri `analiza.ipynb` v VS Code ali z ukazom
-`py -m jupyter notebook analiza.ipynb` in zaženi vse celice.
+`py -m jupyter notebook analiza.ipynb` in zaženi vse celice
+(*Restart* in *Run All*). Zvezek bere podatke iz mape `podatki/`.
 
 ## Struktura projekta
 

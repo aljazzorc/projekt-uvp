@@ -600,10 +600,10 @@ def obisk_in_zmage_klubov(tekme):
     domačih tekmah in delež zmag doma.
 
     Povprečje računamo iz posameznih tekem in ne vzamemo povprečja z
-    lestvice: FBref ga pri klubih, ki jim manjka podatek za nekaj tekem
-    (sezoni 2007/08 in 2008/09), izračuna napačno (npr. 786.543 gledalcev).
-    Zato upoštevamo le klube, ki imajo podatek za vse domače tekme sezone.
-    Covidni sezoni izpustimo.
+    lestvice: tam pri klubih z manjkajočimi tekmami (sezone 2007/08 do
+    2010/11) manjka, ker so bile vrednosti FBrefa napačne in so odstranjene
+    pri čiščenju (shrani_podatke.py). Upoštevamo le klube, ki imajo podatek
+    za vse domače tekme sezone. Covidni sezoni izpustimo.
 
     Sprejme: DataFrame s tekmami.
     Vrne: DataFrame s stolpci sezona, klub, povprecje_gledalcev, zmage_doma (v %).

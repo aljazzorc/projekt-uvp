@@ -3,7 +3,8 @@
 
 Seznama slovarjev iz izlusci_podatke.py pretvori v tabeli pandas
 (DataFrame), uredi vrstni red in tipe stolpcev, preveri, da v podatkih
-ni podvojenih vrstic, ter tabeli zapiše v mapo podatki/:
+ni podvojenih vrstic, odstrani napačna povprečja gledalcev z lestvic
+ter tabeli zapiše v mapo podatki/:
   - podatki/lestvice.csv: ena vrstica za vsak klub v vsaki sezoni,
   - podatki/tekme.csv: ena vrstica za vsako odigrano tekmo.
 
@@ -53,6 +54,15 @@ CELA_STEVILA_TEKME = ["krog", "goli_domaci", "goli_gostje", "gledalci"]
 KLJUC_LESTVICE = ["sezona", "klub"]
 KLJUC_TEKME = ["sezona", "domaci", "gostje"]
 
+# Sezoni, v katerih so zaradi covida-19 igrali brez gledalcev. FBref takrat
+# tekme brez gledalcev šteje kot 0 gledalcev, zato je povprečje na lestvici
+# pravilno, čeprav se ne ujema s povprečjem tekem z znanim obiskom.
+COVID_SEZONE = ["2019-2020", "2020-2021"]
+
+# Največje dovoljeno relativno odstopanje (1 %) povprečja gledalcev na lestvici
+# od povprečja, izračunanega iz tekem z znanim obiskom.
+DOVOLJENO_ODSTOPANJE = 0.01
+
 
 # ============================================================================
 # PRETVORBA V TABELE IN ČIŠČENJE
@@ -88,17 +98,63 @@ def odstrani_podvojene(tabela, kljuc, ime):
     return tabela[~podvojene]
 
 
-def pripravi_lestvice(lestvice):
+def povprecje_gledalcev_iz_tekem(tekme):
     """
-    Seznam slovarjev z lestvicami pretvori v urejeno tabelo pandas.
+    Za vsak klub v vsaki sezoni izračuna povprečno število gledalcev na
+    domačih tekmah, pri katerih je obisk znan.
 
-    Sprejme: seznam slovarjev iz izlusci_vse_lestvice().
+    Sprejme: DataFrame s tekmami (iz pripravi_tekme).
+    Vrne: DataFrame s stolpci sezona, klub, povprecje_iz_tekem.
+    Primer: povprecje_gledalcev_iz_tekem(tekme) → 686 vrstic
+    """
+    povprecja = tekme.groupby(["sezona", "domaci"])["gledalci"].apply(
+        lambda gledalci: gledalci.astype(float).mean())
+    return povprecja.rename("povprecje_iz_tekem").reset_index().rename(columns={"domaci": "klub"})
+
+
+def odstrani_napacna_povprecja(lestvice, tekme):
+    """
+    Odstrani (nastavi na prazno) povprečja gledalcev na lestvici, ki so na
+    FBrefu napačna.
+
+    FBref pri klubih, ki jim manjka podatek o gledalcih za nekaj domačih
+    tekem (sezone 2007/08 do 2010/11), povprečje izračuna napačno; vrednosti
+    so lahko celo večje od kapacitete stadiona (npr. Chelsea 2007/08:
+    786.543). Povprečje z lestvice zato primerjamo s povprečjem tekem z
+    znanim obiskom: če odstopa za več kot DOVOLJENO_ODSTOPANJE, ga
+    odstranimo. Covidnih sezon ne spreminjamo (glej COVID_SEZONE).
+
+    Sprejme: DataFrame z lestvicami in DataFrame s tekmami.
+    Vrne: DataFrame z lestvicami brez napačnih povprečij.
+    Primer: odstrani_napacna_povprecja(lestvice, tekme) → izpiše
+            "Odstranjenih napačnih povprečij gledalcev: 32"
+    """
+    skupaj = lestvice.merge(povprecje_gledalcev_iz_tekem(tekme), on=["sezona", "klub"], how="left")
+    odstopanje = (skupaj["povprecje_gledalcev"].astype(float) / skupaj["povprecje_iz_tekem"] - 1).abs()
+    # fillna(False): kjer povprečja ni, ga tudi ne odstranjujemo.
+    napacno = (odstopanje > DOVOLJENO_ODSTOPANJE).fillna(False) & ~skupaj["sezona"].isin(COVID_SEZONE)
+
+    lestvice = lestvice.copy()
+    lestvice.loc[napacno.values, "povprecje_gledalcev"] = pd.NA
+    print(f"Odstranjenih napačnih povprečij gledalcev: {napacno.sum()}")
+    return lestvice
+
+
+def pripravi_lestvice(lestvice, tekme):
+    """
+    Seznam slovarjev z lestvicami pretvori v urejeno tabelo pandas in
+    odstrani napačna povprečja gledalcev.
+
+    Sprejme: seznam slovarjev iz izlusci_vse_lestvice() in DataFrame s
+             tekmami (iz pripravi_tekme), ki ga potrebujemo za preverjanje
+             povprečij gledalcev.
     Vrne: DataFrame s stolpci STOLPCI_LESTVICE, urejen po sezoni in mestu.
-    Primer: pripravi_lestvice(izlusci_vse_lestvice()) → DataFrame s 686 vrsticami
+    Primer: pripravi_lestvice(izlusci_vse_lestvice(), tekme) → DataFrame s 686 vrsticami
     """
     tabela = pd.DataFrame(lestvice, columns=STOLPCI_LESTVICE)
     tabela = uredi_tipe(tabela, CELA_STEVILA_LESTVICE)
     tabela = odstrani_podvojene(tabela, KLJUC_LESTVICE, "lestvice")
+    tabela = odstrani_napacna_povprecja(tabela, tekme)
     return tabela.sort_values(["sezona", "mesto"]).reset_index(drop=True)
 
 
@@ -167,8 +223,9 @@ def shrani_vse():
     Ne sprejme ničesar.
     Vrne: par (lestvice, tekme) kot DataFrame-a, da ju lahko uporabi main.py.
     """
-    lestvice = pripravi_lestvice(izlusci_vse_lestvice())
+    # Najprej pripravimo tekme, ker jih potrebujemo za preverjanje lestvic.
     tekme = pripravi_tekme(izlusci_vse_tekme())
+    lestvice = pripravi_lestvice(izlusci_vse_lestvice(), tekme)
 
     shrani_csv(lestvice, POT_LESTVICE)
     shrani_csv(tekme, POT_TEKME)

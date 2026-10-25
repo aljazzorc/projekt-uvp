@@ -305,13 +305,13 @@ sezona,mesto,klub,tekme,zmage,remiji,porazi,dani_goli,prejeti_goli,gol_razlika,t
 2006-2007,18,Sheffield United,38,10,8,20,32,55,-23,38,1.0,30680,Robert Hulse,8,Relegated
 2006-2007,19,Charlton Athletic,38,8,10,20,34,60,-26,34,0.89,26195,Darren Bent,13,Relegated
 2006-2007,20,Watford,38,5,13,20,29,59,-30,28,0.74,18892,Hameur Bouazza,5,Relegated
-2007-2008,1,Manchester Utd,38,27,6,5,80,22,58,87,2.29,719065,Cristiano Ronaldo,31,→ Champions League via Champions League win
-2007-2008,2,Chelsea,38,25,10,3,65,26,39,85,2.24,786543,Frank Lampard,10,→ Champions League via league finish
+2007-2008,1,Manchester Utd,38,27,6,5,80,22,58,87,2.29,,Cristiano Ronaldo,31,→ Champions League via Champions League win
+2007-2008,2,Chelsea,38,25,10,3,65,26,39,85,2.24,,Frank Lampard,10,→ Champions League via league finish
 2007-2008,3,Arsenal,38,24,11,3,74,31,43,83,2.18,,Emmanuel Adebayor,24,→ Champions League via league finish
 2007-2008,4,Liverpool,38,21,13,4,67,28,39,76,2.0,,Fernando Torres,24,→ Champions League via league finish
 2007-2008,5,Everton,38,19,8,11,55,33,22,65,1.71,,Yakubu Aiyegbeni,15,→ UEFA Cup via league finish
 2007-2008,6,Aston Villa,38,16,12,10,71,51,20,60,1.58,,John Carew,13,→ UEFA Intertoto Cup via league finish
-2007-2008,7,Blackburn,38,15,13,10,50,48,2,58,1.53,454936,Roque Santa Cruz,19,
+2007-2008,7,Blackburn,38,15,13,10,50,48,2,58,1.53,,Roque Santa Cruz,19,
 2007-2008,8,Portsmouth,38,16,9,13,48,40,8,57,1.5,,Benjani,12,→ UEFA Cup via cup win 1
 2007-2008,9,Manchester City,38,15,10,13,45,53,-8,55,1.45,,Elano,8,→ UEFA Cup 2
 2007-2008,10,West Ham,38,13,10,15,42,50,-8,49,1.29,,Dean Ashton,10,
@@ -321,49 +321,49 @@ sezona,mesto,klub,tekme,zmage,remiji,porazi,dani_goli,prejeti_goli,gol_razlika,t
 2007-2008,14,Wigan Athletic,38,10,10,18,34,51,-17,40,1.05,,Marcus Bent,7,
 2007-2008,15,Sunderland,38,11,6,21,36,59,-23,39,1.03,,Kenwyne Jones,7,
 2007-2008,16,Bolton,38,9,10,19,36,54,-18,37,0.97,,Nicolas Anelka,10,
-2007-2008,17,Fulham,38,8,12,18,38,60,-22,36,0.95,451687,Clint Dempsey,6,
-2007-2008,18,Reading,38,10,6,22,41,66,-25,36,0.95,224058,Dave Kitson,10,Relegated
+2007-2008,17,Fulham,38,8,12,18,38,60,-22,36,0.95,,Clint Dempsey,6,
+2007-2008,18,Reading,38,10,6,22,41,66,-25,36,0.95,,Dave Kitson,10,Relegated
 2007-2008,19,Birmingham City,38,8,11,19,46,62,-16,35,0.92,,Mikael Forssell,9,Relegated
-2007-2008,20,Derby County,38,1,8,29,20,89,-69,11,0.29,205403,Kenny Miller,4,Relegated
-2008-2009,1,Manchester Utd,38,28,6,4,68,24,44,90,2.37,95385,Cristiano Ronaldo,18,→ Champions League via league finish
-2008-2009,2,Liverpool,38,25,11,2,77,27,50,86,2.26,75328,Steven Gerrard,16,→ Champions League via league finish
-2008-2009,3,Chelsea,38,25,8,5,68,24,44,83,2.18,79017,Nicolas Anelka,19,→ Champions League via league finish
-2008-2009,4,Arsenal,38,20,12,6,68,37,31,72,1.89,95063,Robin van Persie,11,→ Champions League via league finish
-2008-2009,5,Everton,38,17,12,9,55,37,18,63,1.66,56473,"Marouane Fellaini, Tim Cahill",8,→ Europa League via league finish
-2008-2009,6,Aston Villa,38,17,11,10,54,48,6,62,1.63,68766,Gabriel Agbonlahor,12,→ Europa League via league finish 1
-2008-2009,7,Fulham,38,14,11,13,39,34,5,53,1.39,42042,"Andrew Johnson, Clint Dempsey",7,→ Europa League via league finish 2
-2008-2009,8,Tottenham,38,14,9,15,45,45,0,51,1.34,68265,Darren Bent,12,
-2008-2009,9,West Ham,38,14,9,15,42,45,-3,51,1.34,50024,Carlton Cole,10,
-2008-2009,10,Manchester City,38,15,5,18,58,50,8,50,1.32,68340,Robinho,14,
-2008-2009,11,Wigan Athletic,38,12,9,17,34,45,-11,45,1.18,29054,Amr Zaki,10,
-2008-2009,12,Stoke City,38,12,9,17,38,55,-17,45,1.18,42687,Ricardo Fuller,11,
-2008-2009,13,Bolton,38,11,8,19,41,53,-12,41,1.08,28482,Kevin Davies,12,
-2008-2009,14,Portsmouth,38,10,11,17,38,57,-19,41,1.08,37677,Peter Crouch,10,
-2008-2009,15,Blackburn,38,10,11,17,40,60,-20,41,1.08,27884,Benni McCarthy,10,
-2008-2009,16,Sunderland,38,9,9,20,34,54,-20,36,0.95,69372,"Kenwyne Jones, Djibril Cissé",10,
-2008-2009,17,Hull City,38,8,11,19,39,64,-25,35,0.92,39292,Geovanni,8,
-2008-2009,18,Newcastle,38,7,13,18,40,59,-19,34,0.89,84205,"Obafemi Martins, Michael Owen",8,Relegated
-2008-2009,19,Middlesbrough,38,7,11,20,28,57,-29,32,0.84,45013,Tuncay Şanlı,7,Relegated
-2008-2009,20,West Brom,38,8,8,22,36,67,-31,32,0.84,44612,Chris Brunt,9,Relegated
+2007-2008,20,Derby County,38,1,8,29,20,89,-69,11,0.29,,Kenny Miller,4,Relegated
+2008-2009,1,Manchester Utd,38,28,6,4,68,24,44,90,2.37,,Cristiano Ronaldo,18,→ Champions League via league finish
+2008-2009,2,Liverpool,38,25,11,2,77,27,50,86,2.26,,Steven Gerrard,16,→ Champions League via league finish
+2008-2009,3,Chelsea,38,25,8,5,68,24,44,83,2.18,,Nicolas Anelka,19,→ Champions League via league finish
+2008-2009,4,Arsenal,38,20,12,6,68,37,31,72,1.89,,Robin van Persie,11,→ Champions League via league finish
+2008-2009,5,Everton,38,17,12,9,55,37,18,63,1.66,,"Marouane Fellaini, Tim Cahill",8,→ Europa League via league finish
+2008-2009,6,Aston Villa,38,17,11,10,54,48,6,62,1.63,,Gabriel Agbonlahor,12,→ Europa League via league finish 1
+2008-2009,7,Fulham,38,14,11,13,39,34,5,53,1.39,,"Andrew Johnson, Clint Dempsey",7,→ Europa League via league finish 2
+2008-2009,8,Tottenham,38,14,9,15,45,45,0,51,1.34,,Darren Bent,12,
+2008-2009,9,West Ham,38,14,9,15,42,45,-3,51,1.34,,Carlton Cole,10,
+2008-2009,10,Manchester City,38,15,5,18,58,50,8,50,1.32,,Robinho,14,
+2008-2009,11,Wigan Athletic,38,12,9,17,34,45,-11,45,1.18,,Amr Zaki,10,
+2008-2009,12,Stoke City,38,12,9,17,38,55,-17,45,1.18,,Ricardo Fuller,11,
+2008-2009,13,Bolton,38,11,8,19,41,53,-12,41,1.08,,Kevin Davies,12,
+2008-2009,14,Portsmouth,38,10,11,17,38,57,-19,41,1.08,,Peter Crouch,10,
+2008-2009,15,Blackburn,38,10,11,17,40,60,-20,41,1.08,,Benni McCarthy,10,
+2008-2009,16,Sunderland,38,9,9,20,34,54,-20,36,0.95,,"Kenwyne Jones, Djibril Cissé",10,
+2008-2009,17,Hull City,38,8,11,19,39,64,-25,35,0.92,,Geovanni,8,
+2008-2009,18,Newcastle,38,7,13,18,40,59,-19,34,0.89,,"Obafemi Martins, Michael Owen",8,Relegated
+2008-2009,19,Middlesbrough,38,7,11,20,28,57,-29,32,0.84,,Tuncay Şanlı,7,Relegated
+2008-2009,20,West Brom,38,8,8,22,36,67,-31,32,0.84,,Chris Brunt,9,Relegated
 2009-2010,1,Chelsea,38,27,5,6,103,32,71,86,2.26,41423,Didier Drogba,29,→ Champions League via league finish
 2009-2010,2,Manchester Utd,38,27,4,7,86,28,58,85,2.24,74864,Wayne Rooney,26,→ Champions League via league finish
-2009-2010,3,Arsenal,38,23,6,9,83,41,42,75,1.97,63256,Cesc Fàbregas,15,→ Champions League via league finish
+2009-2010,3,Arsenal,38,23,6,9,83,41,42,75,1.97,,Cesc Fàbregas,15,→ Champions League via league finish
 2009-2010,4,Tottenham,38,21,7,10,67,41,26,70,1.84,35794,Jermain Defoe,18,→ Champions League via league finish
 2009-2010,5,Manchester City,38,18,13,7,73,45,28,67,1.76,45513,Carlos Tevez,23,→ Europa League via league finish
 2009-2010,6,Aston Villa,38,17,13,8,52,39,13,64,1.68,38573,Gabriel Agbonlahor,13,→ Europa League via league finish 1
 2009-2010,7,Liverpool,38,18,9,11,61,35,26,63,1.66,42864,Fernando Torres,18,→ Europa League via league finish 2
-2009-2010,8,Everton,38,16,13,9,60,49,11,61,1.61,38765,Louis Saha,13,
+2009-2010,8,Everton,38,16,13,9,60,49,11,61,1.61,,Louis Saha,13,
 2009-2010,9,Birmingham City,38,13,11,14,38,47,-9,50,1.32,25246,Cameron Jerome,11,
 2009-2010,10,Blackburn,38,13,11,14,41,55,-14,50,1.32,25428,David Dunn,9,
-2009-2010,11,Stoke City,38,11,14,13,34,48,-14,47,1.24,30358,Matthew Etherington,5,
+2009-2010,11,Stoke City,38,11,14,13,34,48,-14,47,1.24,,Matthew Etherington,5,
 2009-2010,12,Fulham,38,12,10,16,39,46,-7,46,1.21,23909,Bobby Zamora,8,
 2009-2010,13,Sunderland,38,11,11,16,48,56,-8,44,1.16,40510,Darren Bent,24,
 2009-2010,14,Bolton,38,10,9,19,42,67,-25,39,1.03,21881,"Ivan Klasnić, Matthew Taylor",8,
 2009-2010,15,Wolves,38,9,11,18,32,56,-24,38,1.0,28366,Kevin Doyle,9,
 2009-2010,16,Wigan Athletic,38,9,9,20,37,79,-42,36,0.95,18006,Hugo Rodallega,10,
 2009-2010,17,West Ham,38,8,11,19,47,66,-19,35,0.92,33683,Carlton Cole,10,
-2009-2010,18,Burnley,38,8,6,24,42,82,-40,30,0.79,21801,Steven Fletcher,8,Relegated
-2009-2010,19,Hull City,38,6,12,20,34,75,-41,30,0.79,25745,Stephen Hunt,6,Relegated
+2009-2010,18,Burnley,38,8,6,24,42,82,-40,30,0.79,,Steven Fletcher,8,Relegated
+2009-2010,19,Hull City,38,6,12,20,34,75,-41,30,0.79,,Stephen Hunt,6,Relegated
 2009-2010,20,Portsmouth,38,7,7,24,34,66,-32,19,0.5,18249,Aruna Dindane,8,"9-point deduction 3 , Relegated"
 2010-2011,1,Manchester Utd,38,23,11,4,78,37,41,80,2.11,75109,Dimitar Berbatov,20,→ Champions League via league finish
 2010-2011,2,Chelsea,38,21,8,9,69,33,36,71,1.87,41435,Florent Malouda,13,→ Champions League via league finish
@@ -384,7 +384,7 @@ sezona,mesto,klub,tekme,zmage,remiji,porazi,dani_goli,prejeti_goli,gol_razlika,t
 2010-2011,17,Wolves,38,11,7,20,46,66,-20,40,1.05,27696,Steven Fletcher,10,
 2010-2011,18,Birmingham City,38,8,15,15,37,58,-21,39,1.03,25462,Craig Gardner,8,"Relegated, → Europa League via cup win"
 2010-2011,19,Blackpool,38,10,9,19,55,78,-23,39,1.03,15780,DJ Campbell,13,Relegated
-2010-2011,20,West Ham,38,7,12,19,43,70,-27,33,0.87,35353,Demba Ba,7,Relegated
+2010-2011,20,West Ham,38,7,12,19,43,70,-27,33,0.87,,Demba Ba,7,Relegated
 2011-2012,1,Manchester City,38,28,5,5,93,29,64,89,2.34,47045,Sergio Agüero,23,→ Champions League via league finish
 2011-2012,2,Manchester Utd,38,28,5,5,89,33,56,89,2.34,75387,Wayne Rooney,27,→ Champions League via league finish
 2011-2012,3,Arsenal,38,21,7,10,74,49,25,70,1.84,60000,Robin van Persie,30,→ Champions League via league finish
