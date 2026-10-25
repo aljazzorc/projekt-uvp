@@ -55,7 +55,16 @@ Podatki se zajamejo s spletnim strgalnikom (brez API-ja) v dveh ločenih korakih
 
 ## Analiza
 
-*V pripravi.* Analiza bo v Jupyter zvezku `analiza.ipynb`.
+Analiza je v Jupyter zvezku `analiza.ipynb`, pomožne funkcije zanj
+(nalaganje podatkov, izračuni, grafi) pa v `analiza_funkcije.py`.
+
+Zvezek se začne s pregledom podatkov: opis stolpcev, število klubov, tekem in
+golov po sezonah ter manjkajoči podatki. Ura začetka je znana le od sezone
+2014/15, podatki o gledalcih pa manjkajo zaradi covida-19 (tekme brez
+gledalcev v sezonah 2019/20 in 2020/21) in ker jih FBref za nekatere
+sezone nima (predvsem 2007/08 in 2008/09). Analiza to upošteva.
+
+*Razdelki z grafi so v pripravi.*
 
 ## Ugotovitve
 
@@ -103,6 +112,9 @@ py izlusci_podatke.py        # izpiše povzetek lestvic in tekem po sezonah
 py shrani_podatke.py         # ustvari podatki/lestvice.csv in podatki/tekme.csv
 ```
 
+**3. Analiza:** odpri `analiza.ipynb` v VS Code ali z ukazom
+`py -m jupyter notebook analiza.ipynb` in zaženi vse celice.
+
 ## Struktura projekta
 
 ```
@@ -114,6 +126,8 @@ projekt-uvp/
 ├── izlusci_podatke.py   # izluščanje podatkov iz strani z BeautifulSoup
 ├── shrani_podatke.py    # čiščenje podatkov in zapis v CSV
 ├── main.py              # preveri strani, izlušči podatke in zapiše CSV
+├── analiza_funkcije.py  # pomožne funkcije za analizo
+├── analiza.ipynb        # analiza in predstavitev z grafi
 ├── podatki/
 │   ├── lestvice.csv     # končne lestvice vseh sezon
 │   └── tekme.csv        # vse tekme vseh sezon
