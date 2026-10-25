@@ -17,8 +17,7 @@ in ga kasneje nadaljuješ. Podatki se iz strani izluščijo šele kasneje
 (izlusci_podatke.py).
 
 Zagon:
-    py prenos_strani.py           # vse sezone (68 strani)
-    py prenos_strani.py test      # samo sezona 2023-2024 (2 strani)
+    py prenos_strani.py           # shrani vse sezone (68 strani)
     py prenos_strani.py preveri   # samo preveri, katere strani že imamo
 """
 
@@ -40,9 +39,6 @@ IME_LIGE = "Premier-League"
 # Prva in zadnja sezona: leto označuje začetek sezone (1992 → 1992-1993).
 ZACETNO_LETO = 1992
 KONCNO_LETO = 2025
-
-# Sezona, ki se obdela v testnem načinu.
-TESTNO_LETO = 2023
 
 # Mape, kamor shranjujemo strani (mapa html_strani/ je v .gitignore).
 MAPA_HTML = "html_strani"
@@ -402,12 +398,11 @@ def izpisi_povzetek(stevec):
 # ============================================================================
 
 if __name__ == "__main__":
+    # Način dela preberemo iz ukazne vrstice: brez argumenta shranjujemo
+    # vse sezone, z argumentom "preveri" le pregledamo, kaj že imamo.
     nacin = sys.argv[1] if len(sys.argv) > 1 else ""
 
-    if nacin == "test":
-        print(f"Testni način: samo sezona {oznaka_sezone(TESTNO_LETO)}.")
-        rezultat = shrani_sezone(TESTNO_LETO, TESTNO_LETO)
-    elif nacin == "preveri":
+    if nacin == "preveri":
         print("Preverjam shranjene strani.\n")
         rezultat = preveri_sezone(ZACETNO_LETO, KONCNO_LETO)
     else:

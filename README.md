@@ -19,11 +19,14 @@ Odgovoriti želim na dve skupini vprašanj:
 
 Podatki se zajamejo s spletnim strgalnikom (brez API-ja) v dveh ločenih korakih:
 
-1. **Prenos strani** (`prenos_strani.py`): za vsako sezono se preneseta stran
-   s končno lestvico in stran z vsemi tekmami. Strani se shranijo v mapo
-   `html_strani/`, ki ni na GitHubu. Že prenesene strani se ob ponovnem zagonu
-   preskočijo. Med zahtevki je 7 sekund premora, ker FBref blokira uporabnike
-   z več kot 10 zahtevki na minuto.
+1. **Shranjevanje strani** (`prenos_strani.py`): za vsako sezono potrebujemo
+   stran s končno lestvico in stran z vsemi tekmami (skupaj 68 strani).
+   FBref je zaščiten pred roboti (Cloudflare) in programom vrača napako 403,
+   zato program vsako stran odpre v brskalniku, uporabnik jo shrani s
+   Ctrl+S, program pa shranjeno datoteko poišče v mapi Prenosi, preveri, da
+   vsebuje tabele, in jo premakne v mapo `html_strani/` (ta ni na GitHubu).
+   Že shranjene strani se ob ponovnem zagonu preskočijo, zato lahko delo
+   kadarkoli prekineš.
 2. **Izluščanje podatkov** *(v pripravi)*: iz shranjenih strani se z
    BeautifulSoup izluščijo podatki in zapišejo v CSV datoteke v mapi `podatki/`.
 
@@ -43,12 +46,16 @@ Potrebuješ Python 3 in knjižnice iz `requirements.txt`:
 py -m pip install -r requirements.txt
 ```
 
-Prenos strani:
+Shranjevanje strani:
 
 ```
-py prenos_strani.py         # vse sezone (približno 8 minut)
-py prenos_strani.py test    # samo sezona 2023-2024
+py prenos_strani.py          # odpira strani eno za drugo (68 strani)
+py prenos_strani.py preveri  # izpiše, katere strani še manjkajo
 ```
+
+Ko se stran odpre v brskalniku, jo shrani s **Ctrl+S** kot
+»Spletna stran, samo HTML« v mapo Prenosi in v terminalu pritisni Enter.
+Če vpišeš `k`, se delo prekine in se ob naslednjem zagonu nadaljuje.
 
 ## Struktura projekta
 
@@ -57,7 +64,7 @@ projekt-uvp/
 ├── README.md
 ├── requirements.txt
 ├── .gitignore
-├── prenos_strani.py     # prenos in shranjevanje HTML strani
+├── prenos_strani.py     # pomoč pri shranjevanju HTML strani
 └── html_strani/         # prenesene strani (ni na GitHubu)
     ├── lestvice/
     └── tekme/
