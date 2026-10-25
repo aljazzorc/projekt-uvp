@@ -43,7 +43,15 @@ Podatki se zajamejo s spletnim strgalnikom (brez API-ja) v dveh ločenih korakih
 
    Program za vsako sezono preveri, ali je število tekem enako
    `klubi × (klubi − 1)`, saj vsak klub z vsakim igra doma in v gosteh.
-3. **Zapis v CSV** *(v pripravi)*: podatki se zapišejo v mapo `podatki/`.
+3. **Čiščenje in zapis v CSV** (`shrani_podatke.py`): izluščeni podatki se
+   s knjižnico pandas pretvorijo v tabeli, uredijo (vrstni red in tipi
+   stolpcev, datumi, urejanje po sezoni oziroma datumu), odstranijo se
+   morebitne podvojene vrstice, nato se tabeli zapišeta v mapo `podatki/`:
+   - `podatki/lestvice.csv` – ena vrstica za vsak klub v vsaki sezoni (686 vrstic),
+   - `podatki/tekme.csv` – ena vrstica za vsako tekmo (13.166 vrstic).
+
+   Manjkajoči podatki (npr. ura pri starih tekmah ali gledalci, ki jih FBref
+   za nekatere tekme nima) ostanejo v CSV prazni.
 
 ## Analiza
 
@@ -78,6 +86,12 @@ Izluščanje podatkov iz shranjenih strani:
 py izlusci_podatke.py        # izpiše povzetek lestvic in tekem po sezonah
 ```
 
+Zapis podatkov v CSV:
+
+```
+py shrani_podatke.py         # ustvari podatki/lestvice.csv in podatki/tekme.csv
+```
+
 ## Struktura projekta
 
 ```
@@ -87,6 +101,10 @@ projekt-uvp/
 ├── .gitignore
 ├── prenos_strani.py     # pomoč pri shranjevanju HTML strani
 ├── izlusci_podatke.py   # izluščanje podatkov iz strani z BeautifulSoup
+├── shrani_podatke.py    # čiščenje podatkov in zapis v CSV
+├── podatki/
+│   ├── lestvice.csv     # končne lestvice vseh sezon
+│   └── tekme.csv        # vse tekme vseh sezon
 └── html_strani/         # prenesene strani (ni na GitHubu)
     ├── lestvice/
     └── tekme/
