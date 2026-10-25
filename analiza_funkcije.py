@@ -52,6 +52,12 @@ COVID_SEZONE = ["2019-2020", "2020-2021"]
 # Meje razredov po številu gledalcev na tekmi.
 MEJE_GLEDALCEV = [0, 20000, 30000, 40000, 50000, 60000, 100000]
 
+# Odtenki modre za 1., 2. in 3. mesto: temnejša barva pomeni višje mesto.
+BARVE_MEST = {1: "#1c5cab", 2: "#3987e5", 3: "#86b6ef"}
+
+# Barva za uvrstitve na dno lestvice (umirjena siva).
+BARVA_DNO = "#3a3936"
+
 # Oznake izidov in njihova imena za legende.
 IZIDI = ["D", "X", "G"]
 IMENA_IZIDOV = {"D": "zmaga domačih", "X": "remi", "G": "zmaga gostov"}
@@ -156,6 +162,8 @@ def nastavi_slog():
         "axes.spines.right": False,
         "axes.grid": True,
         "axes.grid.axis": "y",
+        # Mreža naj bo pod stolpci in črtami, ne čez njih.
+        "axes.axisbelow": True,
         "grid.color": BARVA_MREZA,
         "grid.linewidth": 0.8,
         "xtick.color": BARVA_SIVO_BESEDILO,
@@ -602,3 +610,104 @@ def povezava_obiska_in_zmag(obisk):
         "vsi klubi": obisk["povprecje_gledalcev"].corr(obisk["zmage_doma"]),
         "znotraj klubov": odstopanja["povprecje_gledalcev"].corr(odstopanja["zmage_doma"]),
     }
+
+
+# ============================================================================
+# SKLOP 2: KLUBI NA VRHU IN NA DNU LESTVICE
+# ============================================================================
+
+def stevilo_klubov_v_sezoni(lestvice):
+    """
+    Za vsako vrstico lestvice vrne, koliko klubov je igralo v tisti sezoni
+    (22 do sezone 1994/95, nato 20).
+
+    Sprejme: DataFrame z lestvicami.
+    Vrne: Series z istim indeksom kot lestvice.
+    Primer: stevilo_klubov_v_sezoni(lestvice).iloc[0] → 22
+    """
+    # transform("size") vsaki vrstici pripiše velikost njene skupine (sezone).
+    return lestvice.groupby("sezona")["klub"].transform("size")
+
+
+def uvrstitve_na_vrhu(lestvice):
+    """
+    Za vsak klub prešteje, kolikokrat je končal na 1., 2. in 3. mestu.
+
+    Sprejme: DataFrame z lestvicami.
+    Vrne: DataFrame z indeksom klub in stolpci 1, 2, 3 ter skupaj, urejen
+          od kluba z največ uvrstitvami (pri enakem številu odloča več
+          naslovov prvaka).
+    Primer: uvrstitve_na_vrhu(lestvice).loc["Manchester Utd"]
+        → 1: 13, 2: 7, 3: 6, skupaj: 26
+    """
+    vrh = lestvice[lestvice["mesto"] <= 3]
+    # unstack naredi tabelo klub × mesto; fill_value=0 tam, kjer klub mesta ni dosegel.
+    stevila = vrh.groupby(["klub", "mesto"]).size().unstack(fill_value=0)
+    stevila["skupaj"] = stevila.sum(axis=1)
+    return stevila.sort_values(["skupaj", 1], ascending=False)
+
+
+def uvrstitve_na_dnu(lestvice, zadnjih=3):
+    """
+    Za vsak klub prešteje, kolikokrat je končal na zadnjih treh mestih lestvice.
+
+    Ker je bilo v prvih treh sezonah 22 klubov, so "zadnja tri mesta" takrat
+    19.–22. mesto, kasneje pa 18.–20. mesto.
+
+    Sprejme: DataFrame z lestvicami in število zadnjih mest (privzeto 3).
+    Vrne: Series {klub: število uvrstitev}, urejena padajoče.
+    Primer: uvrstitve_na_dnu(lestvice)["Norwich City"] → 6
+    """
+    na_dnu = lestvice["mesto"] > stevilo_klubov_v_sezoni(lestvice) - zadnjih
+    return lestvice.loc[na_dnu, "klub"].value_counts()
+
+
+def graf_uvrstitev_na_vrhu(vrh):
+    """
+    Nariše vodoraven zložen stolpčni graf: za vsak klub, ki je bil vsaj enkrat
+    med prvimi tremi, število 1., 2. in 3. mest. Na koncu stolpca je skupno
+    število uvrstitev.
+
+    Sprejme: DataFrame iz uvrstitve_na_vrhu.
+    Vrne: os grafa (ax).
+    """
+    fig, ax = plt.subplots(figsize=(10, 6))
+    # Obrnemo vrstni red, da je klub z največ uvrstitvami na vrhu grafa.
+    vrh = vrh.iloc[::-1]
+    levo = pd.Series(0, index=vrh.index)
+    imena_mest = {1: "1. mesto (prvak)", 2: "2. mesto", 3: "3. mesto"}
+
+    for mesto in [1, 2, 3]:
+        ax.barh(vrh.index, vrh[mesto], left=levo, color=BARVE_MEST[mesto],
+                edgecolor=BARVA_OZADJE, linewidth=1, height=0.7, label=imena_mest[mesto])
+        levo += vrh[mesto]
+
+    # Skupno število zapišemo desno od stolpca.
+    for i, skupaj in enumerate(vrh["skupaj"]):
+        ax.text(skupaj + 0.3, i, str(skupaj), va="center", fontsize=9, color=BARVA_BESEDILO)
+
+    ax.set_xlabel("število sezon")
+    ax.set_title("Kdo je največkrat končal med prvimi tremi", pad=28)
+    ax.legend(loc="lower left", bbox_to_anchor=(0, 1.0), ncol=3)
+    ax.grid(True, axis="x")
+    ax.grid(False, axis="y")
+    return ax
+
+
+def graf_uvrstitev_na_dnu(dno, najmanj=3):
+    """
+    Nariše vodoraven stolpčni graf klubov, ki so vsaj `najmanj`-krat končali
+    na zadnjih treh mestih lestvice.
+
+    Sprejme: Series iz uvrstitve_na_dnu in najmanjše število uvrstitev za prikaz.
+    Vrne: os grafa (ax).
+    """
+    dno = dno[dno >= najmanj].iloc[::-1]
+    fig, ax = plt.subplots(figsize=(10, 6))
+    stolpci = ax.barh(dno.index, dno, color=BARVA_DNO, height=0.7)
+    ax.bar_label(stolpci, padding=3, fontsize=9, color=BARVA_BESEDILO)
+    ax.set_xlabel("število sezon")
+    ax.set_title(f"Kdo je največkrat končal na zadnjih treh mestih (vsaj {najmanj}-krat)")
+    ax.grid(True, axis="x")
+    ax.grid(False, axis="y")
+    return ax

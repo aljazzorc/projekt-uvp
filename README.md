@@ -77,6 +77,13 @@ Sklop 1 (prednost domačega terena):
   Povprečni obisk se računa iz posameznih tekem, ker je povprečje na lestvici
   FBrefa za sezoni 2007/08 in 2008/09 napačno.
 
+Sklop 2 (boj za naslov in obstanek):
+
+- **Klubi na vrhu lestvice** – vodoraven zložen stolpčni graf števila 1., 2. in
+  3. mest po klubih.
+- **Klubi na dnu lestvice** – vodoraven stolpčni graf klubov, ki so največkrat
+  končali na zadnjih treh mestih.
+
 *Ostali razdelki so v pripravi.*
 
 ## Ugotovitve
