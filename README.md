@@ -70,6 +70,12 @@ Sklop 1 (prednost domačega terena):
   izidov po sezonah.
 - **Goli doma in v gosteh** – črtni graf povprečnega števila golov domačih in
   gostujočih ekip na tekmo po sezonah.
+- **Prazne tribune (covid-19)** – delež zmag domačih pred covidom, med njim in
+  po njem ter primerjava izidov tekem z gledalci in brez njih.
+- **Število gledalcev in zmage** – delež zmag domačih po razredih števila
+  gledalcev in razsevni diagram obiska in zmag doma za vsak klub v vsaki sezoni.
+  Povprečni obisk se računa iz posameznih tekem, ker je povprečje na lestvici
+  FBrefa za sezoni 2007/08 in 2008/09 napačno.
 
 *Ostali razdelki so v pripravi.*
 

@@ -9,6 +9,7 @@ import os
 
 import matplotlib.pyplot as plt
 import pandas as pd
+from matplotlib.patches import Patch
 
 
 # ============================================================================
@@ -37,6 +38,19 @@ BARVA_OZADJE = "#fcfcfb"
 BARVA_BESEDILO = "#0b0b0b"
 BARVA_SIVO_BESEDILO = "#52514e"
 BARVA_MREZA = "#e1e0d9"
+
+# Barvi za primerjavo tekem z gledalci in brez njih (covid). Namenoma nista
+# modra in oranžna, ki v zvezku pomenita domače in goste.
+BARVA_Z_GLEDALCI = "#1baf7a"
+BARVA_BREZ_GLEDALCEV = "#6250d6"
+
+# Sezoni, v katerih so zaradi covida-19 igrali brez gledalcev. Prazen podatek
+# o gledalcih pomeni prazne tribune le v teh dveh sezonah; drugje (npr.
+# 2007/08) pomeni, da podatka na FBrefu ni.
+COVID_SEZONE = ["2019-2020", "2020-2021"]
+
+# Meje razredov po številu gledalcev na tekmi.
+MEJE_GLEDALCEV = [0, 20000, 30000, 40000, 50000, 60000, 100000]
 
 # Oznake izidov in njihova imena za legende.
 IZIDI = ["D", "X", "G"]
@@ -289,3 +303,302 @@ def graf_golov_po_sezonah(goli):
     ax.set_title("Povprečno število golov domačih in gostujočih ekip na tekmo")
     ax.legend(loc="upper left")
     return ax
+
+
+def oznaci_stolpce(ax, stolpci, oblika="{:.1f} %"):
+    """
+    Nad vsak stolpec stolpčnega grafa zapiše njegovo vrednost.
+
+    Sprejme: os grafa, stolpce (kar vrne ax.bar) in obliko zapisa števila.
+    """
+    ax.bar_label(stolpci, labels=[oblika.format(v) for v in stolpci.datavalues],
+                 padding=3, fontsize=9, color=BARVA_BESEDILO)
+
+
+# ============================================================================
+# SKLOP 1: PRAZNE TRIBUNE (COVID-19)
+# ============================================================================
+
+def je_brez_gledalcev(tekme):
+    """
+    Za vsako tekmo pove, ali je bila odigrana pred praznimi tribunami
+    zaradi covida-19 (sezona 2019/20 ali 2020/21 in ni podatka o gledalcih).
+
+    Sprejme: DataFrame s tekmami.
+    Vrne: Series z vrednostmi True/False (True = brez gledalcev).
+    Primer: je_brez_gledalcev(tekme).sum() → 440
+    """
+    return tekme["sezona"].isin(COVID_SEZONE) & tekme["gledalci"].isna()
+
+
+def obdobje_tekme(tekma):
+    """
+    Tekmi določi obdobje za graf okoli covida: sezono, pri covidnih
+    sezonah pa ločeno del z gledalci in del brez njih.
+
+    Sprejme: eno vrstico DataFrame-a s tekmami.
+    Vrne: niz z imenom obdobja.
+    Primer: obdobje_tekme(tekma iz julija 2020) → "19/20\nbrez gledalcev"
+    """
+    kratko = kratka_sezona(tekma["sezona"])
+    if tekma["sezona"] not in COVID_SEZONE:
+        return kratko
+    if pd.isna(tekma["gledalci"]):
+        return f"{kratko}\nbrez gledalcev"
+    # V sezoni 2020/21 je bilo na nekaj tekmah dovoljeno le 2.000–10.000 gledalcev.
+    if tekma["sezona"] == "2020-2021":
+        return f"{kratko}\nomejeno"
+    return f"{kratko}\nz gledalci"
+
+
+def zmage_domacih_okoli_covida(tekme, od_sezone="2016-2017", do_sezone="2023-2024"):
+    """
+    Izračuna delež zmag domačih v sezonah pred covidom, med njim in po njem.
+    Covidni sezoni sta razdeljeni na tekme z gledalci in brez njih.
+
+    Sprejme: DataFrame s tekmami ter prvo in zadnjo sezono za prikaz.
+    Vrne: DataFrame s stolpci obdobje, tekme, zmage_domacih (v %) in
+          brez_gledalcev (True/False), v časovnem vrstnem redu.
+    Primer: zmage_domacih_okoli_covida(tekme) → 10 obdobij od 16/17 do 23/24
+    """
+    izbrane = tekme[tekme["sezona"].between(od_sezone, do_sezone)].copy()
+    izbrane["obdobje"] = izbrane.apply(obdobje_tekme, axis=1)
+    izbrane["brez_gledalcev"] = je_brez_gledalcev(izbrane)
+
+    # sort=False ohrani vrstni red, v katerem se obdobja pojavijo (po datumu).
+    izbrane = izbrane.sort_values("datum")
+    obdobja = izbrane.groupby("obdobje", sort=False).agg(
+        tekme=("izid", "size"),
+        zmage_domacih=("izid", lambda izidi: (izidi == "D").mean() * 100),
+        brez_gledalcev=("brez_gledalcev", "first"),
+    )
+    return obdobja.reset_index()
+
+
+def graf_zmag_okoli_covida(obdobja):
+    """
+    Nariše stolpčni graf deleža zmag domačih po obdobjih okoli covida.
+    Obdobja brez gledalcev so obarvana drugače, nad stolpci so vrednosti,
+    pod oznakami pa število tekem.
+
+    Sprejme: DataFrame iz zmage_domacih_okoli_covida.
+    Vrne: os grafa (ax).
+    """
+    fig, ax = plt.subplots()
+    barve = [BARVA_BREZ_GLEDALCEV if brez else BARVA_Z_GLEDALCI
+             for brez in obdobja["brez_gledalcev"]]
+    stolpci = ax.bar(range(len(obdobja)), obdobja["zmage_domacih"], color=barve, width=0.7)
+    oznaci_stolpce(ax, stolpci)
+
+    # Pod imenom obdobja izpišemo še število tekem (pri malem številu tekem
+    # je delež manj zanesljiv).
+    ax.set_xticks(range(len(obdobja)))
+    ax.set_xticklabels([f"{o}\n({n} tekem)" for o, n in zip(obdobja["obdobje"], obdobja["tekme"])],
+                       fontsize=8)
+
+    # Legendo sestavimo ročno iz dveh barvnih kvadratkov (Patch).
+    legenda = [Patch(color=BARVA_Z_GLEDALCI, label="z gledalci"),
+               Patch(color=BARVA_BREZ_GLEDALCEV, label="brez gledalcev")]
+    ax.set_ylim(0, 65)
+    ax.set_ylabel("zmage domačih (%)")
+    ax.set_title("Delež zmag domačih pred covidom, med njim in po njem", pad=28)
+    ax.legend(handles=legenda, loc="lower left", bbox_to_anchor=(0, 1.0), ncol=2)
+    return ax
+
+
+def primerjava_z_in_brez_gledalcev(tekme):
+    """
+    Primerja tekme brez gledalcev (covid) z vsemi tekmami iz sezon, ko so
+    tribune bile polne (vse sezone razen 2019/20 in 2020/21).
+
+    Sprejme: DataFrame s tekmami.
+    Vrne: DataFrame s stolpcema "z gledalci" in "brez gledalcev" ter
+          vrsticami: število tekem, deleži izidov, goli domačih in gostov,
+          točke na tekmo doma in v gosteh.
+    Primer: primerjava_z_in_brez_gledalcev(tekme).loc["zmaga domačih (%)"]
+        → z gledalci 45.9, brez gledalcev 38.6
+    """
+    skupine = {
+        "z gledalci": tekme[~tekme["sezona"].isin(COVID_SEZONE)],
+        "brez gledalcev": tekme[je_brez_gledalcev(tekme)],
+    }
+    primerjava = {}
+    for ime, t in skupine.items():
+        delezi = delez_izidov(t)
+        primerjava[ime] = {
+            "tekme": len(t),
+            "zmaga domačih (%)": delezi["D"],
+            "remi (%)": delezi["X"],
+            "zmaga gostov (%)": delezi["G"],
+            "goli domačih na tekmo": t["goli_domaci"].mean(),
+            "goli gostov na tekmo": t["goli_gostje"].mean(),
+            "točke domačih na tekmo": (3 * (t["izid"] == "D") + (t["izid"] == "X")).mean(),
+            "točke gostov na tekmo": (3 * (t["izid"] == "G") + (t["izid"] == "X")).mean(),
+        }
+    return pd.DataFrame(primerjava)
+
+
+def graf_z_in_brez_gledalcev(primerjava):
+    """
+    Nariše združen stolpčni graf: za vsak izid (zmaga domačih, remi,
+    zmaga gostov) dva stolpca, za tekme z gledalci in brez njih.
+
+    Sprejme: DataFrame iz primerjava_z_in_brez_gledalcev.
+    Vrne: os grafa (ax).
+    """
+    fig, ax = plt.subplots(figsize=(8, 5))
+    vrstice = ["zmaga domačih (%)", "remi (%)", "zmaga gostov (%)"]
+    sirina = 0.38
+
+    # Stolpca skupine zamaknemo levo in desno od sredine izida.
+    for zamik, skupina, barva in [(-sirina / 2, "z gledalci", BARVA_Z_GLEDALCI),
+                                  (sirina / 2, "brez gledalcev", BARVA_BREZ_GLEDALCEV)]:
+        polozaji = [i + zamik for i in range(len(vrstice))]
+        stolpci = ax.bar(polozaji, primerjava.loc[vrstice, skupina], width=sirina - 0.02,
+                         color=barva, label=f"{skupina} ({primerjava.loc['tekme', skupina]:.0f} tekem)")
+        oznaci_stolpce(ax, stolpci)
+
+    ax.set_xticks(range(len(vrstice)))
+    ax.set_xticklabels([v.replace(" (%)", "") for v in vrstice])
+    ax.set_ylim(0, 55)
+    ax.set_ylabel("delež tekem (%)")
+    ax.set_title("Izidi tekem z gledalci in brez njih", pad=28)
+    ax.legend(loc="lower left", bbox_to_anchor=(0, 1.0), ncol=2)
+    return ax
+
+
+# ============================================================================
+# SKLOP 1: ŠTEVILO GLEDALCEV IN ZMAGE
+# ============================================================================
+
+def tekme_z_gledalci(tekme):
+    """
+    Izbere tekme, pri katerih je podatek o gledalcih znan, brez covidnih
+    sezon (te bi primerjavo popačile).
+
+    Sprejme: DataFrame s tekmami.
+    Vrne: DataFrame z izbranimi tekmami.
+    Primer: len(tekme_z_gledalci(tekme)) → 11886
+    """
+    return tekme[~tekme["sezona"].isin(COVID_SEZONE) & tekme["gledalci"].notna()]
+
+
+def ime_razreda(od, do):
+    """
+    Sestavi berljivo ime razreda gledalcev.
+
+    Primer: ime_razreda(20000, 30000) → "20–30 tisoč"
+            ime_razreda(0, 20000) → "pod 20 tisoč"
+            ime_razreda(60000, 100000) → "nad 60 tisoč"
+    """
+    if od == MEJE_GLEDALCEV[0]:
+        return f"pod {do // 1000} tisoč"
+    if do == MEJE_GLEDALCEV[-1]:
+        return f"nad {od // 1000} tisoč"
+    return f"{od // 1000}–{do // 1000} tisoč"
+
+
+def zmage_po_razredih_gledalcev(tekme):
+    """
+    Tekme razdeli v razrede po številu gledalcev (meje v MEJE_GLEDALCEV) in
+    za vsak razred izračuna število tekem in delež zmag domačih.
+
+    Sprejme: DataFrame s tekmami (upošteva le tekme z znanimi gledalci).
+    Vrne: DataFrame z indeksom razred ter stolpcema tekme in zmage_domacih (v %).
+    Primer: zmage_po_razredih_gledalcev(tekme).loc["nad 60 tisoč", "zmage_domacih"] → 61.8
+    """
+    izbrane = tekme_z_gledalci(tekme)
+    imena = [ime_razreda(od, do) for od, do in zip(MEJE_GLEDALCEV, MEJE_GLEDALCEV[1:])]
+    # pd.cut vsaki tekmi določi razred; right=False pomeni, da je spodnja
+    # meja vključena (20000 gledalcev spada v razred 20–30 tisoč).
+    razred = pd.cut(izbrane["gledalci"].astype(float), MEJE_GLEDALCEV, labels=imena, right=False)
+    return izbrane.groupby(razred, observed=True).agg(
+        tekme=("izid", "size"),
+        zmage_domacih=("izid", lambda izidi: (izidi == "D").mean() * 100),
+    )
+
+
+def graf_zmag_po_razredih_gledalcev(razredi):
+    """
+    Nariše stolpčni graf deleža zmag domačih po razredih števila gledalcev.
+
+    Sprejme: DataFrame iz zmage_po_razredih_gledalcev.
+    Vrne: os grafa (ax).
+    """
+    fig, ax = plt.subplots(figsize=(9, 5))
+    stolpci = ax.bar(range(len(razredi)), razredi["zmage_domacih"], color=BARVA_DOMACI, width=0.7)
+    oznaci_stolpce(ax, stolpci)
+    ax.set_xticks(range(len(razredi)))
+    ax.set_xticklabels([f"{r}\n({n} tekem)" for r, n in zip(razredi.index, razredi["tekme"])],
+                       fontsize=9)
+    ax.set_ylim(0, 75)
+    ax.set_xlabel("število gledalcev na tekmi")
+    ax.set_ylabel("zmage domačih (%)")
+    ax.set_title("Delež zmag domačih glede na število gledalcev")
+    return ax
+
+
+def obisk_in_zmage_klubov(tekme):
+    """
+    Za vsak klub v vsaki sezoni izračuna povprečno število gledalcev na
+    domačih tekmah in delež zmag doma.
+
+    Povprečje računamo iz posameznih tekem in ne vzamemo povprečja z
+    lestvice: FBref ga pri klubih, ki jim manjka podatek za nekaj tekem
+    (sezoni 2007/08 in 2008/09), izračuna napačno (npr. 786.543 gledalcev).
+    Zato upoštevamo le klube, ki imajo podatek za vse domače tekme sezone.
+    Covidni sezoni izpustimo.
+
+    Sprejme: DataFrame s tekmami.
+    Vrne: DataFrame s stolpci sezona, klub, povprecje_gledalcev, zmage_doma (v %).
+    Primer: len(obisk_in_zmage_klubov(tekme)) → 598
+    """
+    brez_covida = tekme[~tekme["sezona"].isin(COVID_SEZONE)]
+    obisk = brez_covida.groupby(["sezona", "domaci"]).agg(
+        povprecje_gledalcev=("gledalci", lambda g: g.astype(float).mean()),
+        manjka=("gledalci", lambda g: g.isna().sum()),
+        zmage_doma=("izid", lambda izidi: (izidi == "D").mean() * 100),
+    ).reset_index().rename(columns={"domaci": "klub"})
+    obisk = obisk[obisk["manjka"] == 0]
+    return obisk.drop(columns="manjka").reset_index(drop=True)
+
+
+def graf_obisk_in_zmage(obisk):
+    """
+    Nariše razsevni diagram: vsaka točka je en klub v eni sezoni, vodoravno
+    je povprečno število gledalcev, navpično delež zmag doma.
+
+    Sprejme: DataFrame iz obisk_in_zmage_klubov.
+    Vrne: os grafa (ax).
+    """
+    fig, ax = plt.subplots(figsize=(9, 5.5))
+    ax.scatter(obisk["povprecje_gledalcev"] / 1000, obisk["zmage_doma"], s=18,
+               color=BARVA_DOMACI, alpha=0.6, edgecolor="none")
+    ax.set_xlabel("povprečno število gledalcev na domači tekmi (v tisočih)")
+    ax.set_ylabel("zmage doma (%)")
+    ax.set_title("Obisk in zmage doma (en klub v eni sezoni)")
+    ax.grid(True, axis="both")
+    return ax
+
+
+def povezava_obiska_in_zmag(obisk):
+    """
+    Izračuna korelacijo med obiskom in zmagami doma na dva načina:
+      - med vsemi klubi in sezonami skupaj,
+      - znotraj klubov: primerjamo vsak klub sam s seboj (odstopanje obiska
+        in zmag od povprečja tega kluba), da izločimo vpliv tega, da imajo
+        močni klubi hkrati velike stadione.
+
+    Korelacija je število med -1 in 1: blizu 0 pomeni, da povezave ni,
+    blizu 1 pa, da večjemu obisku skoraj vedno sledi več zmag.
+
+    Sprejme: DataFrame iz obisk_in_zmage_klubov.
+    Vrne: slovar {"vsi klubi": ..., "znotraj klubov": ...}.
+    Primer: povezava_obiska_in_zmag(obisk) → {"vsi klubi": 0.4, "znotraj klubov": 0.0}
+    """
+    odstopanja = obisk[["povprecje_gledalcev", "zmage_doma"]] - \
+        obisk.groupby("klub")[["povprecje_gledalcev", "zmage_doma"]].transform("mean")
+    return {
+        "vsi klubi": obisk["povprecje_gledalcev"].corr(obisk["zmage_doma"]),
+        "znotraj klubov": odstopanja["povprecje_gledalcev"].corr(odstopanja["zmage_doma"]),
+    }
