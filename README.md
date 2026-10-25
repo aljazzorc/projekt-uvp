@@ -64,7 +64,14 @@ golov po sezonah ter manjkajoči podatki. Ura začetka je znana le od sezone
 gledalcev v sezonah 2019/20 in 2020/21) in ker jih FBref za nekatere
 sezone nima (predvsem 2007/08 in 2008/09). Analiza to upošteva.
 
-*Razdelki z grafi so v pripravi.*
+Sklop 1 (prednost domačega terena):
+
+- **Zmage, remiji in porazi doma in v gosteh** – zložen stolpčni graf deležev
+  izidov po sezonah.
+- **Goli doma in v gosteh** – črtni graf povprečnega števila golov domačih in
+  gostujočih ekip na tekmo po sezonah.
+
+*Ostali razdelki so v pripravi.*
 
 ## Ugotovitve
 
