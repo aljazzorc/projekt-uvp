@@ -58,6 +58,13 @@ BARVE_MEST = {1: "#1c5cab", 2: "#3987e5", 3: "#86b6ef"}
 # Barva za uvrstitve na dno lestvice (umirjena siva).
 BARVA_DNO = "#3a3936"
 
+# Besedilo, s katerim FBref v opombi lestvice označi izpadle klube.
+OZNAKA_IZPADA = "Relegated"
+
+# Število tekem v sezoni z 20 klubi; točke iz sezon z 22 klubi (42 tekem)
+# preračunamo na toliko tekem, da so primerljive.
+TEKME_V_SEZONI = 38
+
 # Oznake izidov in njihova imena za legende.
 IZIDI = ["D", "X", "G"]
 IMENA_IZIDOV = {"D": "zmaga domačih", "X": "remi", "G": "zmaga gostov"}
@@ -711,3 +718,170 @@ def graf_uvrstitev_na_dnu(dno, najmanj=3):
     ax.grid(True, axis="x")
     ax.grid(False, axis="y")
     return ax
+
+
+# ============================================================================
+# SKLOP 2: TOČKE PRVAKA, TOČKE ZA OBSTANEK IN RAZLIKA MED VRHOM IN DNOM
+# ============================================================================
+
+def tocke_na_38_tekem(lestvice):
+    """
+    Točke preračuna na 38 tekem, da so sezone z 42 tekmami (22 klubov)
+    primerljive s sezonami z 38 tekmami.
+
+    Sprejme: DataFrame z lestvicami (ali njegov del).
+    Vrne: Series s preračunanimi točkami.
+    Primer: Manchester Utd 1992/93: 84 točk v 42 tekmah → 76.0
+    """
+    return lestvice["tocke"] / lestvice["tekme"] * TEKME_V_SEZONI
+
+
+def tocke_prvaka(lestvice):
+    """
+    Za vsako sezono vrne prvaka, njegove točke in točke, preračunane na 38 tekem.
+
+    Sprejme: DataFrame z lestvicami.
+    Vrne: DataFrame z indeksom sezona in stolpci klub, tocke, tocke_38.
+    Primer: tocke_prvaka(lestvice).loc["2017-2018", "tocke"] → 100
+    """
+    prvaki = lestvice[lestvice["mesto"] == 1].set_index("sezona")
+    prvaki = prvaki[["klub", "tocke"]].assign(tocke_38=tocke_na_38_tekem(prvaki))
+    return prvaki
+
+
+def stevilo_izpadlih(lestvice):
+    """
+    Za vsako sezono prešteje izpadle klube (po opombi "Relegated").
+    Običajno izpadejo trije, v sezoni 1994/95 pa so štirje, ker se je liga
+    zmanjšala z 22 na 20 klubov.
+
+    Sprejme: DataFrame z lestvicami.
+    Vrne: Series {sezona: število izpadlih}.
+    Primer: stevilo_izpadlih(lestvice)["1994-1995"] → 4
+    """
+    izpadel = lestvice["opomba"].fillna("").str.contains(OZNAKA_IZPADA)
+    return izpadel.groupby(lestvice["sezona"]).sum()
+
+
+def meja_obstanka(lestvice):
+    """
+    Za vsako sezono poišče najslabši klub, ki je obstal v ligi (mesto tik nad
+    izpadlimi), in najboljši izpadli klub (prvo mesto pod črto).
+
+    Sprejme: DataFrame z lestvicami.
+    Vrne: DataFrame z indeksom sezona in stolpci obstal, tocke, tocke_38,
+          izpadel, tocke_izpadlega.
+    Primer: meja_obstanka(lestvice).loc["2023-2024", "obstal"] → "Nottingham"
+    """
+    izpadlih = lestvice["sezona"].map(stevilo_izpadlih(lestvice))
+    mesto_obstanka = stevilo_klubov_v_sezoni(lestvice) - izpadlih
+
+    obstali = lestvice[lestvice["mesto"] == mesto_obstanka].set_index("sezona")
+    izpadli = lestvice[lestvice["mesto"] == mesto_obstanka + 1].set_index("sezona")
+    return pd.DataFrame({
+        "obstal": obstali["klub"],
+        "tocke": obstali["tocke"],
+        "tocke_38": tocke_na_38_tekem(obstali),
+        "izpadel": izpadli["klub"],
+        "tocke_izpadlega": izpadli["tocke"],
+    })
+
+
+def graf_tock_skozi_cas(tocke, barva, naslov, oznaka_povprecja, referenca=None):
+    """
+    Nariše črtni graf točk (preračunanih na 38 tekem) po sezonah s črtkanim
+    povprečjem. Uporabimo ga za točke prvaka in točke za obstanek.
+
+    Sprejme: Series s točkami po sezonah, barvo črte, naslov grafa,
+             besedilo za povprečje v legendi in neobvezno referenčno
+             vrednost kot par (vrednost, opis), ki se nariše s pikčasto črto.
+    Vrne: os grafa (ax).
+    """
+    fig, ax = plt.subplots()
+    x = list(range(len(tocke)))
+    ax.plot(x, tocke, color=barva, linewidth=2, marker="o", markersize=4,
+            label="točke (preračunane na 38 tekem)")
+    ax.axhline(tocke.mean(), color=BARVA_SIVO_BESEDILO, linewidth=1, linestyle="--",
+               label=f"{oznaka_povprecja} ({tocke.mean():.1f})")
+    if referenca is not None:
+        vrednost, opis = referenca
+        ax.axhline(vrednost, color=BARVA_SIVO_BESEDILO, linewidth=1, linestyle=":", label=opis)
+    oznaci_sezone_na_osi(ax, list(tocke.index))
+    ax.set_ylabel("točke")
+    ax.set_title(naslov, pad=28)
+    ax.legend(loc="lower left", bbox_to_anchor=(0, 1.0), ncol=3)
+    return ax
+
+
+def oznaci_tocko(ax, tocke, sezona, besedilo, zamik):
+    """
+    Na črtnem grafu s puščico označi vrednost v izbrani sezoni.
+
+    Sprejme: os grafa, Series s točkami (indeks so sezone), sezono, besedilo
+             oznake in zamik besedila (dx, dy) glede na točko.
+    """
+    i = list(tocke.index).index(sezona)
+    ax.annotate(besedilo, xy=(i, tocke.iloc[i]), xytext=(i + zamik[0], tocke.iloc[i] + zamik[1]),
+                arrowprops={"arrowstyle": "->", "color": BARVA_SIVO_BESEDILO},
+                color=BARVA_SIVO_BESEDILO, fontsize=9)
+
+
+def vrh_in_dno_po_sezonah(lestvice, koliko=3):
+    """
+    Za vsako sezono izračuna povprečne točke na tekmo in povprečno gol
+    razliko na tekmo prvih treh in zadnjih treh klubov ter razliko med njimi.
+    Vrednosti "na tekmo" so primerljive med sezonami z 42 in 38 tekmami.
+
+    Sprejme: DataFrame z lestvicami in velikost skupine (privzeto 3).
+    Vrne: DataFrame z indeksom sezona in stolpci tocke_vrh, tocke_dno,
+          razlika_tock, gol_razlika_vrh, gol_razlika_dno, razlika_gol_razlike.
+    Primer: vrh_in_dno_po_sezonah(lestvice).loc["2023-2024", "razlika_tock"] → 1.72
+    """
+    na_tekmo = lestvice.assign(
+        tocke_na_tekmo=lestvice["tocke"] / lestvice["tekme"],
+        gol_razlika_na_tekmo=lestvice["gol_razlika"] / lestvice["tekme"],
+    )
+    vrh = na_tekmo[na_tekmo["mesto"] <= koliko].groupby("sezona")
+    dno = na_tekmo[na_tekmo["mesto"] > stevilo_klubov_v_sezoni(na_tekmo) - koliko].groupby("sezona")
+
+    tabela = pd.DataFrame({
+        "tocke_vrh": vrh["tocke_na_tekmo"].mean(),
+        "tocke_dno": dno["tocke_na_tekmo"].mean(),
+        "gol_razlika_vrh": vrh["gol_razlika_na_tekmo"].mean(),
+        "gol_razlika_dno": dno["gol_razlika_na_tekmo"].mean(),
+    })
+    tabela["razlika_tock"] = tabela["tocke_vrh"] - tabela["tocke_dno"]
+    tabela["razlika_gol_razlike"] = tabela["gol_razlika_vrh"] - tabela["gol_razlika_dno"]
+    return tabela
+
+
+def graf_vrh_in_dno(tabela):
+    """
+    Nariše dva grafa enega pod drugim (skupna časovna os): zgoraj povprečne
+    točke na tekmo prvih treh in zadnjih treh klubov, spodaj njihovo
+    povprečno gol razliko na tekmo. Prostor med črtama (razlika) je osenčen.
+
+    Sprejme: DataFrame iz vrh_in_dno_po_sezonah.
+    Vrne: seznam obeh osi.
+    """
+    fig, osi = plt.subplots(2, 1, figsize=(11, 8), sharex=True)
+    x = list(range(len(tabela)))
+    grafa = [
+        (osi[0], "tocke", "točke na tekmo", "Točke na tekmo: prvi trije in zadnji trije klubi"),
+        (osi[1], "gol_razlika", "gol razlika na tekmo", "Gol razlika na tekmo: prvi trije in zadnji trije klubi"),
+    ]
+    for ax, stolpec, os_y, naslov in grafa:
+        vrh, dno = tabela[f"{stolpec}_vrh"], tabela[f"{stolpec}_dno"]
+        # Osenčen pas med črtama pokaže velikost razlike.
+        ax.fill_between(x, dno, vrh, color=BARVA_MREZA, alpha=0.6, linewidth=0)
+        ax.plot(x, vrh, color=BARVE_MEST[1], linewidth=2, marker="o", markersize=3,
+                label="prvi trije")
+        ax.plot(x, dno, color=BARVA_DNO, linewidth=2, marker="o", markersize=3,
+                label="zadnji trije")
+        ax.set_ylabel(os_y)
+        ax.set_title(naslov, pad=28)
+        ax.legend(loc="lower left", bbox_to_anchor=(0, 1.0), ncol=2)
+    osi[1].axhline(0, color=BARVA_SIVO_BESEDILO, linewidth=0.8)
+    oznaci_sezone_na_osi(osi[1], list(tabela.index))
+    fig.tight_layout()
+    return osi

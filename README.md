@@ -83,8 +83,15 @@ Sklop 2 (boj za naslov in obstanek):
   3. mest po klubih.
 - **Klubi na dnu lestvice** – vodoraven stolpčni graf klubov, ki so največkrat
   končali na zadnjih treh mestih.
+- **Točke prvaka** – črtni graf točk prvaka po sezonah.
+- **Točke za obstanek** – črtni graf točk najslabšega kluba, ki je obstal v ligi
+  (število izpadlih klubov se prebere iz opomb na lestvici; v sezoni 1994/95 so
+  izpadli štirje).
+- **Razlika med vrhom in dnom** – točke in gol razlika na tekmo prvih treh in
+  zadnjih treh klubov po sezonah.
 
-*Ostali razdelki so v pripravi.*
+Točke iz prvih treh sezon (22 klubov, 42 tekem) so preračunane na 38 tekem,
+da so primerljive z ostalimi sezonami.
 
 ## Ugotovitve
 
