@@ -31,9 +31,16 @@ Podatki se zajamejo s spletnim strgalnikom (brez API-ja) v dveh ločenih korakih
    BeautifulSoup izluščijo podatki. Tabele program poišče po atributu `id`,
    posamezne podatke v vrsticah pa po atributu `data-stat`. Ker FBref nekatere
    tabele skrije v HTML komentarje, se oznake komentarjev pred branjem odstranijo.
-   Zaenkrat se izluščijo končne lestvice vseh sezon (mesto, klub, zmage, remiji,
-   porazi, goli, točke, povprečje gledalcev, najboljši strelec in opomba, npr.
-   izpad ali odbitek točk); podatki o posameznih tekmah so v pripravi.
+   Izluščijo se:
+   - **končne lestvice** vseh sezon (mesto, klub, zmage, remiji, porazi, goli,
+     točke, povprečje gledalcev, najboljši strelec in opomba, npr. izpad ali
+     odbitek točk),
+   - **vse odigrane tekme** (krog, datum, ura, domači in gostje, rezultat,
+     gledalci, stadion, sodnik) z izpeljanim izidom: `D` zmaga domačih,
+     `X` remi, `G` zmaga gostov. Vmesne in naslovne vrstice tabele se preskočijo.
+
+   Program za vsako sezono preveri, ali je število tekem enako
+   `klubi × (klubi − 1)`, saj vsak klub z vsakim igra doma in v gosteh.
 3. **Zapis v CSV** *(v pripravi)*: podatki se zapišejo v mapo `podatki/`.
 
 ## Analiza
@@ -66,7 +73,7 @@ Ko se stran odpre v brskalniku, jo shrani s **Ctrl+S** kot
 Izluščanje podatkov iz shranjenih strani:
 
 ```
-py izlusci_podatke.py        # izpiše število klubov po sezonah in zadnjo lestvico
+py izlusci_podatke.py        # izpiše povzetek lestvic in tekem po sezonah
 ```
 
 ## Struktura projekta

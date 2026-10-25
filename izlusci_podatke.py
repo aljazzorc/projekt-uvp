@@ -3,12 +3,13 @@ Izluščanje podatkov iz shranjenih HTML strani FBrefa z BeautifulSoup.
 
 Strani shrani prenos_strani.py v mapo html_strani/. Ta datoteka jih le
 prebere (spleta ne uporablja) in iz njih sestavi sezname slovarjev:
-  - lestvice: en slovar za vsak klub v vsaki sezoni.
+  - lestvice: en slovar za vsak klub v vsaki sezoni,
+  - tekme: en slovar za vsako odigrano tekmo.
 
 Tabele iščemo po atributu id, celice v vrsticah pa po atributu data-stat,
 ki pove, kateri podatek je v celici (npr. data-stat="points" so točke).
 
-Zagon (izpiše povzetek za vse sezone in lestvico zadnje sezone):
+Zagon (izpiše povzetek lestvic in tekem za vse sezone):
     py izlusci_podatke.py
 """
 
@@ -16,7 +17,9 @@ import os
 
 from bs4 import BeautifulSoup
 
-from prenos_strani import KONCNO_LETO, ZACETNO_LETO, oznaka_sezone, pot_lestvice
+from prenos_strani import (
+    KONCNO_LETO, ZACETNO_LETO, oznaka_sezone, pot_lestvice, pot_tekem,
+)
 
 
 # ============================================================================
@@ -51,6 +54,33 @@ CELOSTEVILSKI_STOLPCI = [
     "prejeti_goli", "gol_razlika", "tocke", "povprecje_gledalcev",
 ]
 DECIMALNI_STOLPCI = ["tocke_na_tekmo"]
+
+# Kateri data-stat na strani s tekmami ustreza kateremu stolpcu.
+# Rezultat (data-stat="score") obdelamo posebej, ker ga razdelimo na dva stolpca.
+STOLPCI_TEKEM = {
+    "gameweek": "krog",
+    "dayofweek": "dan",
+    "date": "datum",
+    "start_time": "ura",
+    "home_team": "domaci",
+    "away_team": "gostje",
+    "attendance": "gledalci",
+    "venue": "stadion",
+    "referee": "sodnik",
+    "notes": "opomba",
+}
+
+# Razredi vrstic, ki niso tekme: prazne vmesne vrstice in ponovljene glave tabele.
+RAZREDI_VMESNIH_VRSTIC = ["spacer", "thead"]
+
+# Znak med goli domačih in gostov. FBref uporablja pomišljaj (en dash),
+# ki je drug znak kot navaden vezaj "-".
+POMISLJAJ = "–"
+
+# Oznake izida tekme: zmaga domačih, remi, zmaga gostov.
+ZMAGA_DOMACIH = "D"
+REMI = "X"
+ZMAGA_GOSTOV = "G"
 
 
 # ============================================================================
@@ -246,8 +276,217 @@ def izlusci_vse_lestvice(od_leta=ZACETNO_LETO, do_leta=KONCNO_LETO):
 
 
 # ============================================================================
+# POMOŽNE FUNKCIJE ZA TEKME
+# ============================================================================
+
+def razbij_rezultat(besedilo):
+    """
+    Razdeli rezultat tekme na gole domačih in gole gostov.
+
+    Sprejme: niz z rezultatom (z pomišljajem "–") ali None.
+    Vrne: par (goli_domaci, goli_gostje) kot int; če rezultata ni ali ga
+          ne razumemo, (None, None).
+    Primer: razbij_rezultat("2–1") → (2, 1)
+            razbij_rezultat(None) → (None, None)
+    """
+    if not besedilo or POMISLJAJ not in besedilo:
+        return None, None
+    domaci, gostje = besedilo.split(POMISLJAJ, 1)
+    return v_stevilo(domaci.strip()), v_stevilo(gostje.strip())
+
+
+def ocisti_uro(besedilo):
+    """
+    Iz zapisa ure obdrži le angleški čas začetka tekme.
+
+    FBref za angleškim časom v oklepaju doda še čas v časovnem pasu
+    brskalnika, s katerim je bila stran shranjena (pri nas +1 ura).
+
+    Sprejme: niz ali None.
+    Vrne: niz z uro (npr. "20:00") ali None.
+    Primer: ocisti_uro("20:00(21:00)") → "20:00"
+            ocisti_uro(None) → None
+    """
+    if not besedilo:
+        return None
+    return besedilo.split("(")[0].strip()
+
+
+def doloci_izid(goli_domaci, goli_gostje):
+    """
+    Iz golov določi izid tekme.
+
+    Sprejme: gole domačih in gole gostov (int).
+    Vrne: ZMAGA_DOMACIH ("D"), REMI ("X") ali ZMAGA_GOSTOV ("G").
+    Primer: doloci_izid(2, 1) → "D"
+            doloci_izid(0, 0) → "X"
+            doloci_izid(0, 3) → "G"
+    """
+    if goli_domaci > goli_gostje:
+        return ZMAGA_DOMACIH
+    if goli_domaci < goli_gostje:
+        return ZMAGA_GOSTOV
+    return REMI
+
+
+def je_vmesna_vrstica(vrstica):
+    """
+    Preveri, ali vrstica tabele tekem ni tekma (prazna vmesna vrstica ali
+    ponovljena glava tabele).
+
+    Sprejme: vrstico tabele (<tr>).
+    Vrne: True, če ima vrstica katerega od razredov iz RAZREDI_VMESNIH_VRSTIC
+          ali nima domače ekipe, sicer False.
+    Primer: je_vmesna_vrstica(<tr class="spacer partial_table result_all">) → True
+    """
+    razredi = vrstica.get("class", [])
+    if any(razred in razredi for razred in RAZREDI_VMESNIH_VRSTIC):
+        return True
+    return preberi_celico(vrstica, "home_team") is None
+
+
+# ============================================================================
+# IZLUŠČANJE TEKEM
+# ============================================================================
+
+def id_tabele_tekem(sezona):
+    """
+    Vrne id tabele z vsemi tekmami sezone.
+
+    Sprejme: oznako sezone (npr. "2023-2024").
+    Vrne: niz z id-jem tabele.
+    Primer: id_tabele_tekem("2023-2024") → "sched_2023-2024_9_1"
+    """
+    return f"sched_{sezona}_{OZNAKA_LIGE}_1"
+
+
+def pretvori_vrstico_tekme(vrstica, sezona):
+    """
+    Iz ene vrstice tabele tekem sestavi slovar s podatki o tekmi.
+
+    Sprejme: vrstico tabele (<tr>) in oznako sezone.
+    Vrne: slovar s podatki o tekmi ali None, če tekma nima rezultata
+          (npr. preložena ali še neodigrana tekma).
+    Primer: pretvori_vrstico_tekme(vrstica, "2023-2024")
+        → {"sezona": "2023-2024", "krog": 1, "dan": "Fri", "datum": "2023-08-11",
+           "ura": "20:00", "domaci": "Burnley", "gostje": "Manchester City",
+           "gledalci": 21572, "stadion": "Turf Moor", "sodnik": "Craig Pawson",
+           "opomba": None, "goli_domaci": 0, "goli_gostje": 3, "izid": "G"}
+    """
+    goli_domaci, goli_gostje = razbij_rezultat(preberi_celico(vrstica, "score"))
+    if goli_domaci is None or goli_gostje is None:
+        return None
+
+    tekma = {"sezona": sezona}
+    for data_stat, stolpec in STOLPCI_TEKEM.items():
+        tekma[stolpec] = preberi_celico(vrstica, data_stat)
+
+    # Pretvorba v prave tipe in čiščenje ure.
+    tekma["krog"] = v_stevilo(tekma["krog"])
+    tekma["gledalci"] = v_stevilo(tekma["gledalci"])
+    tekma["ura"] = ocisti_uro(tekma["ura"])
+
+    tekma["goli_domaci"] = goli_domaci
+    tekma["goli_gostje"] = goli_gostje
+    tekma["izid"] = doloci_izid(goli_domaci, goli_gostje)
+    return tekma
+
+
+def izlusci_tekme(soup, sezona):
+    """
+    Iz strani s tekmami izlušči vse odigrane tekme sezone.
+
+    Preskoči vmesne vrstice, ponovljene glave in tekme brez rezultata.
+
+    Sprejme: BeautifulSoup strani (iz nalozi_html) in oznako sezone.
+    Vrne: seznam slovarjev, en za vsako tekmo (v vrstnem redu s strani).
+          Če tabele ni, vrne prazen seznam in izpiše opozorilo.
+    Primer: izlusci_tekme(soup, "2023-2024") → [{...}, {...}, ...]  (380 tekem)
+    """
+    tabela = soup.find("table", id=id_tabele_tekem(sezona))
+    if tabela is None:
+        print(f"OPOZORILO: v sezoni {sezona} ni tabele {id_tabele_tekem(sezona)}.")
+        return []
+
+    tekme = []
+    for vrstica in tabela.find("tbody").find_all("tr"):
+        if je_vmesna_vrstica(vrstica):
+            continue
+        tekma = pretvori_vrstico_tekme(vrstica, sezona)
+        if tekma is not None:
+            tekme.append(tekma)
+    return tekme
+
+
+def izlusci_vse_tekme(od_leta=ZACETNO_LETO, do_leta=KONCNO_LETO):
+    """
+    Izlušči tekme vseh sezon iz shranjenih datotek v html_strani/tekme/.
+
+    Sezone, za katere datoteke ni, preskoči in izpiše opozorilo.
+
+    Sprejme: začetno in končno leto (privzeto vse sezone projekta).
+    Vrne: en sam seznam slovarjev z vsemi tekmami vseh sezon.
+    Primer: izlusci_vse_tekme(2023, 2023) → seznam 380 slovarjev
+    """
+    vse = []
+    for leto in range(od_leta, do_leta + 1):
+        sezona = oznaka_sezone(leto)
+        pot = pot_tekem(sezona)
+        if not os.path.exists(pot):
+            print(f"OPOZORILO: datoteka {pot} ne obstaja, sezono preskočim.")
+            continue
+        vse.extend(izlusci_tekme(nalozi_html(pot), sezona))
+    return vse
+
+
+# ============================================================================
 # GLAVNI PROGRAM (preizkus izluščanja)
 # ============================================================================
+
+def prestej_po_sezonah(vrstice):
+    """
+    Prešteje, koliko vrstic (klubov ali tekem) je v vsaki sezoni.
+
+    Sprejme: seznam slovarjev s ključem "sezona".
+    Vrne: slovar {sezona: število}.
+    Primer: prestej_po_sezonah(lestvice) → {"1992-1993": 22, ..., "2025-2026": 20}
+    """
+    stevilo = {}
+    for vrstica in vrstice:
+        stevilo[vrstica["sezona"]] = stevilo.get(vrstica["sezona"], 0) + 1
+    return stevilo
+
+
+def izpisi_povzetek(lestvice, tekme):
+    """
+    Za vsako sezono izpiše število klubov, število tekem, pričakovano število
+    tekem, delež zmag domačih in število tekem brez podatka o gledalcih.
+
+    Pričakovano število tekem je klubi * (klubi - 1), ker vsak klub z vsakim
+    drugim igra enkrat doma in enkrat v gosteh. Če se števili ne ujemata,
+    izpišemo opozorilo, saj to pomeni, da je pri izluščanju kaj narobe.
+
+    Sprejme: seznam slovarjev z lestvicami in seznam slovarjev s tekmami.
+    """
+    klubi_po_sezonah = prestej_po_sezonah(lestvice)
+    tekme_po_sezonah = prestej_po_sezonah(tekme)
+
+    print(f"{'sezona':<10} {'klubi':>5} {'tekme':>6} {'pričak.':>8} "
+          f"{'zmage domačih':>14} {'brez gledalcev':>15}")
+    for sezona, stevilo_klubov in klubi_po_sezonah.items():
+        stevilo_tekem = tekme_po_sezonah.get(sezona, 0)
+        pricakovano = stevilo_klubov * (stevilo_klubov - 1)
+        tekme_sezone = [t for t in tekme if t["sezona"] == sezona]
+        zmage = sum(1 for t in tekme_sezone if t["izid"] == ZMAGA_DOMACIH)
+        brez = sum(1 for t in tekme_sezone if not t["gledalci"])
+        # max(..., 1): pri sezoni brez tekem se izognemo deljenju z 0.
+        delez = zmage / max(stevilo_tekem, 1)
+        opozorilo = "" if stevilo_tekem == pricakovano else "  <-- NE UJEMA SE"
+        print(f"{sezona:<10} {stevilo_klubov:>5} {stevilo_tekem:>6} {pricakovano:>8} "
+              f"{delez:>14.1%} {brez:>15}{opozorilo}")
+
+    print(f"\nSkupaj: {len(lestvice)} vrstic lestvic in {len(tekme)} tekem.")
+
 
 def izpisi_lestvico(klubi):
     """
@@ -264,18 +503,15 @@ def izpisi_lestvico(klubi):
 
 if __name__ == "__main__":
     lestvice = izlusci_vse_lestvice()
+    tekme = izlusci_vse_tekme()
 
-    # Koliko klubov smo prebrali v vsaki sezoni (pričakovano 22 do 1994-1995, nato 20).
-    print("Število klubov po sezonah:")
-    stevilo_po_sezonah = {}
-    for klub in lestvice:
-        stevilo_po_sezonah[klub["sezona"]] = stevilo_po_sezonah.get(klub["sezona"], 0) + 1
-    for sezona, stevilo in stevilo_po_sezonah.items():
-        print(f"  {sezona}: {stevilo}")
-    print(f"Skupaj: {len(lestvice)} vrstic\n")
+    # Povzetek po sezonah: število tekem mora biti klubi * (klubi - 1).
+    izpisi_povzetek(lestvice, tekme)
 
-    # Za kontrolo izpišemo še lestvico zadnje prebrane sezone.
+    # Za kontrolo izpišemo še lestvico in prvo tekmo zadnje prebrane sezone.
     if lestvice:
         zadnja = lestvice[-1]["sezona"]
-        print(f"Lestvica {zadnja}:")
+        print(f"\nLestvica {zadnja}:")
         izpisi_lestvico([k for k in lestvice if k["sezona"] == zadnja])
+    if tekme:
+        print(f"\nPrimer tekme: {tekme[0]}")
